@@ -1,25 +1,43 @@
 import express from 'express';
 import cors from 'cors';
 
-import { Kin } from './kin';
-console.log('TypeScript Eslint Prettier Starter Template!');
-console.log('A project by Caelin Sutch, follow him at @caelin_sutch');
+import {
+  Client,
+  Environment,
+  kinToQuarks,
+  PrivateKey,
+  PublicKey,
+  TransactionType,
+} from '@kinecosystem/kin-sdk-v2';
 
 const app = express();
 app.use(cors());
 
 const port = 3001;
 
+// Set up Kin client
+let kinClient = {};
+
 app.get('/healthcheck', (req, res) => {
   console.log('🚀 ~ /healthcheck');
-  res.sendStatus(200);
+  res.send(JSON.stringify(kinClient));
+});
+
+app.post('/setup', (req, res) => {
+  console.log('🚀 ~ /setup');
+  const env = req.query.env === 'Prod' ? Environment.Prod : Environment.Test;
+  const appIndex = Number(req.query.appIndex);
+  kinClient = new Client(env, { appIndex });
+  console.log('🚀 ~ kinClient', kinClient);
+  res.sendStatus(201);
 });
 
 async function createKinAccount(res) {
-  const key = await Kin.generateKey();
+  const key = PrivateKey.random();
   console.log('🚀 ~ key', key);
   res.send('okay!');
 }
+
 app.post('/account', (req, res) => {
   console.log('🚀 ~ /account');
   createKinAccount(res);

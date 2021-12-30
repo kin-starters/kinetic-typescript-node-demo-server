@@ -9,13 +9,14 @@ import {
 
 export class Kin {
   static generateKey() {
-    console.log('🚀 ~ generateKey');
     return PrivateKey.random();
   }
 
   readonly client: Client;
 
   constructor(env: Environment, appIndex?: number) {
+    console.log('🚀 ~ constructor', env, appIndex);
+
     this.client = new Client(env, { appIndex });
   }
 
