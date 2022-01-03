@@ -77,6 +77,7 @@ async function getBalance(req, res) {
 
       res.send(balanceInKin);
     } catch (error) {
+      console.log('🚀 ~ error', error);
       res.sendStatus(400);
     }
   }
@@ -85,6 +86,30 @@ async function getBalance(req, res) {
 app.get('/balance', (req, res) => {
   console.log('🚀 ~ /balance ');
   getBalance(req, res);
+});
+
+async function requestAirdrop(req, res) {
+  const name = req?.query?.name || '';
+  const amount = req?.query?.amount || '';
+  if (typeof name === 'string') {
+    try {
+      const { kinTokenAccounts } = users[name];
+      const quarksAmount = kinToQuarks(amount);
+
+      await kinClient.requestAirdrop(kinTokenAccounts[0], quarksAmount);
+
+      console.log('🚀 ~ airdrop successful', name, amount);
+      res.sendStatus(200);
+    } catch (error) {
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
+app.post('/airdrop', (req, res) => {
+  console.log('🚀 ~ /airdrop ');
+  requestAirdrop(req, res);
 });
 
 // catch 404 and forward to error handler
