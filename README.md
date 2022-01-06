@@ -1,37 +1,24 @@
-# typescript-eslint-prettier-boilerplate
+# Kin Node SDK Demo
 
-Simple boilerplate with TypeScript, Prettier, and ESLint configured.
+## Requirements
 
-## Getting Started
-Install node modules: `npm install`
+### 1) Environment variable for server URL
 
-Run the code with auto restart: `npm run dev`
-
-
----
-
-Kin Issues
-
-https://developer.kin.org/tutorials/node/
-```
-https://github.com/kintegrate/kin-starter-node/blob/main/src/kin.ts
-
-import { Environment, kinToQuarks, PrivateKey, PublicKey, TransactionType } from '@kin-sdk-next/base'
-import { Client } from '@kin-sdk-next/node'
-
-not
-
-import {
-  Client,
-  Environment,
-  kinToQuarks,
-  PrivateKey,
-  PublicKey,
-  TransactionType,
-} from '@kinecosystem/kin-sdk-v2';
+`.env`
 
 ```
+SECRET_KEY=Your App Account Secret Key
+SERVER_WEBHOOK_SECRET=Your Webhook Secret
 ```
-typo
-extend it to suite your custom needs
+
+## Start
+
+```
+npm run start
+```
+
+or
+
+```
+yarn start
 ```
