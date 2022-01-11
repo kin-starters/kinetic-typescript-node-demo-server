@@ -22,3 +22,5 @@ or
 ```
 yarn start
 ```
+## Front End
+This Kin BE Demo Server is compatible with our [Kin SDK Front End](https://github.com/kinecosystem/kin-sdk-demo-fe)
