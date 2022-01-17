@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import bs58 from 'bs58';
 
 import {
   Client,
@@ -30,9 +31,34 @@ app.use(express.json());
 // Set up Kin client
 let kinClient = new Client(Environment.Test, { appIndex: 0 });
 const appPrivateKey = PrivateKey.fromString(process.env.SECRET_KEY);
+const appPublicKey = appPrivateKey?.publicKey()?.toBase58();
 
 // List of Users
 const users = {};
+interface SaveKinAccount {
+  name: string;
+  privateKey: PrivateKey;
+  kinTokenAccounts: PublicKey[];
+}
+function saveKinAccount({
+  name,
+  privateKey,
+  kinTokenAccounts,
+}: SaveKinAccount) {
+  // TODO save your account data securely
+  users[name] = { privateKey, kinTokenAccounts };
+}
+
+// List of Transactions
+const transactions = [];
+interface SaveKinTransaction {
+  transaction: string;
+}
+function saveKinTransaction({ transaction }: SaveKinTransaction) {
+  // TODO save your transaction data securely
+  transactions.push(transaction);
+  console.log('🚀 ~ transactions', transactions);
+}
 
 // Endpoints
 app.get('/status', (req, res) => {
@@ -41,6 +67,7 @@ app.get('/status', (req, res) => {
     JSON.stringify({
       appIndex: kinClient ? kinClient.appIndex : 0,
       users: Object.keys(users),
+      transactions,
     })
   );
 });
@@ -62,20 +89,6 @@ app.post('/setup', (req, res) => {
   console.log('🚀 ~ /setup');
   setUpServer({ req, res });
 });
-
-interface SaveKinAccount {
-  name: string;
-  privateKey: PrivateKey;
-  kinTokenAccounts: PublicKey[];
-}
-function saveKinAccount({
-  name,
-  privateKey,
-  kinTokenAccounts,
-}: SaveKinAccount) {
-  // TODO save your account data securely
-  users[name] = { privateKey, kinTokenAccounts };
-}
 
 async function createKinAccount({ req, res }: AsyncRequest) {
   const name = req.query.name;
@@ -154,7 +167,11 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
       }
 
       const quarks = kinToQuarks(amount);
-      await kinClient.requestAirdrop(destination, quarks);
+
+      const buffer = await kinClient.requestAirdrop(destination, quarks);
+      const transactionId = bs58.encode(buffer);
+
+      saveKinTransaction({ transaction: transactionId });
 
       console.log('🚀 ~ airdrop successful', to, amount);
       res.sendStatus(200);
@@ -168,6 +185,47 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
 app.post('/airdrop', (req, res) => {
   console.log('🚀 ~ /airdrop ');
   requestAirdrop({ req, res });
+});
+
+async function getTransaction({ req, res }: AsyncRequest) {
+  const transaction = req?.query?.transaction || '';
+  console.log('🚀 ~ transaction', transaction);
+  if (typeof transaction === 'string') {
+    try {
+      const transactionBuffer = bs58.decode(transaction);
+      const { txState, payments } = await kinClient.getTransaction(
+        transactionBuffer
+      );
+      console.log('🚀 ~ txState', txState);
+      console.log('🚀 ~ payments', payments);
+
+      if (!txState) throw new Error('No Transaction Found');
+
+      let decodedPayments;
+      if (payments?.length > 0) {
+        decodedPayments = payments.map(
+          ({ sender, destination, quarks, type }) => {
+            return {
+              quarks,
+              type,
+              sender: sender.toBase58(),
+              destination: destination.toBase58(),
+            };
+          }
+        );
+        console.log('🚀 ~ decodedPayments', decodedPayments);
+      }
+      res.send(JSON.stringify({ txState, payments: decodedPayments || [] }));
+    } catch (error) {
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
+app.get('/transaction', (req, res) => {
+  console.log('🚀 ~ /transaction ');
+  getTransaction({ req, res });
 });
 
 function getTypeEnum(type) {
@@ -282,5 +340,7 @@ app.use(function (req, res) {
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(
+    `Kin App (Public Key - ${appPublicKey}) listening at http://localhost:${port}`
+  );
 });
