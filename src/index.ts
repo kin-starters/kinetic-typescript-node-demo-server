@@ -279,7 +279,6 @@ async function submitPayment({ req, res }: AsyncRequest) {
         quarks,
         type: typeEnum,
       };
-      console.log('🚀 ~ paymentObject', paymentObject);
 
       const buffer = await kinClient.submitPayment(paymentObject);
       const transactionId = bs58.encode(buffer);
