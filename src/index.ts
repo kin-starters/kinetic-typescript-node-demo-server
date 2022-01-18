@@ -47,16 +47,17 @@ function saveKinAccount({
 }: SaveKinAccount) {
   // TODO save your account data securely
   users[name] = { privateKey, kinTokenAccounts };
+  console.log('🚀 ~ users', users);
 }
 
 // List of Transactions
 const transactions = [];
 interface SaveKinTransaction {
-  transaction: string;
+  transactionId: string;
 }
-function saveKinTransaction({ transaction }: SaveKinTransaction) {
-  // TODO save your transaction data securely
-  transactions.push(transaction);
+function saveKinTransaction({ transactionId }: SaveKinTransaction) {
+  // TODO save your transaction data if required
+  transactions.push(transactionId);
   console.log('🚀 ~ transactions', transactions);
 }
 
@@ -92,19 +93,19 @@ app.post('/setup', (req, res) => {
 
 async function createKinAccount({ req, res }: AsyncRequest) {
   const name = req.query.name;
-  console.log('🚀 ~ name', name);
+  console.log('🚀 ~ createKinAccount', name);
   try {
     if (typeof name === 'string') {
       const privateKey = PrivateKey.random();
-      // Create Account
+      // Create Account - doesn't return anything
       await kinClient.createAccount(privateKey);
+
       // Resolve Token Account
       const kinTokenAccounts = await kinClient.resolveTokenAccounts(
         privateKey.publicKey()
       );
 
       saveKinAccount({ name, privateKey, kinTokenAccounts });
-      console.log('🚀 ~ users', users);
       res.sendStatus(201);
     } else {
       throw new Error('No valid name');
@@ -156,6 +157,7 @@ app.get('/balance', (req, res) => {
 async function requestAirdrop({ req, res }: AsyncRequest) {
   const to = req?.query?.to || '';
   const amount = req?.query?.amount || '0';
+  console.log('🚀 ~ requestAirdrop', to, amount);
   if (typeof to === 'string' && typeof amount === 'string') {
     try {
       let destination;
@@ -170,8 +172,7 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
 
       const buffer = await kinClient.requestAirdrop(destination, quarks);
       const transactionId = bs58.encode(buffer);
-
-      saveKinTransaction({ transaction: transactionId });
+      saveKinTransaction({ transactionId });
 
       console.log('🚀 ~ airdrop successful', to, amount);
       res.sendStatus(200);
@@ -189,32 +190,36 @@ app.post('/airdrop', (req, res) => {
 
 async function getTransaction({ req, res }: AsyncRequest) {
   const transaction = req?.query?.transaction || '';
-  console.log('🚀 ~ transaction', transaction);
+  console.log('🚀 ~ getTransaction', transaction);
   if (typeof transaction === 'string') {
     try {
       const transactionBuffer = bs58.decode(transaction);
-      const { txState, payments } = await kinClient.getTransaction(
+      const { txId, txState, payments } = await kinClient.getTransaction(
         transactionBuffer
       );
-      console.log('🚀 ~ txState', txState);
-      console.log('🚀 ~ payments', payments);
 
-      if (!txState) throw new Error('No Transaction Found');
+      if (txState === 0) throw new Error("Can't find transaction");
+
+      console.log('🚀 ~ Got Transaction!');
+      console.log('🚀 ~ txId', bs58.encode(txId));
 
       let decodedPayments;
       if (payments?.length > 0) {
         decodedPayments = payments.map(
           ({ sender, destination, quarks, type }) => {
-            return {
-              quarks,
+            const paymentObject = {
               type,
+              quarks,
               sender: sender.toBase58(),
               destination: destination.toBase58(),
             };
+
+            return paymentObject;
           }
         );
         console.log('🚀 ~ decodedPayments', decodedPayments);
       }
+
       res.send(JSON.stringify({ txState, payments: decodedPayments || [] }));
     } catch (error) {
       console.log('🚀 ~ error', error);
@@ -243,9 +248,9 @@ function getTypeEnum(type) {
   return transactionType;
 }
 
-async function makePayment({ req, res }: AsyncRequest) {
-  console.log('🚀 ~ makePayment', req.body);
-  const { from, to, amount, memo, type } = req.body;
+async function submitPayment({ req, res }: AsyncRequest) {
+  const { from, to, amount, type } = req.body;
+  console.log('🚀 ~ submitPayment', from, to, amount, type);
 
   if (typeof from === 'string' && typeof to === 'string') {
     try {
@@ -266,20 +271,21 @@ async function makePayment({ req, res }: AsyncRequest) {
       }
 
       const quarks = kinToQuarks(amount);
+      const typeEnum = getTypeEnum(type);
 
       const paymentObject: Payment = {
         sender,
         destination,
         quarks,
-        type: getTypeEnum(type),
+        type: typeEnum,
       };
-
-      if (memo) paymentObject['memo'] = memo;
-
       console.log('🚀 ~ paymentObject', paymentObject);
-      await kinClient.submitPayment(paymentObject);
 
-      console.log('🚀 ~ payment successful', from, to, amount);
+      const buffer = await kinClient.submitPayment(paymentObject);
+      const transactionId = bs58.encode(buffer);
+      saveKinTransaction({ transactionId });
+
+      console.log('🚀 ~ payment successful', from, to, amount, type);
       res.sendStatus(200);
     } catch (error) {
       console.log('🚀 ~ error', error);
@@ -290,18 +296,16 @@ async function makePayment({ req, res }: AsyncRequest) {
 
 app.post('/send', (req, res) => {
   console.log('🚀 ~ /send ');
-  makePayment({ req, res });
+  submitPayment({ req, res });
 });
 
 // Webhooks
 app.use(
   '/events',
   EventsHandler((events: Event[]) => {
-    console.log('🚀 ~ /events');
-    console.log('🚀 ~ events', events);
-    for (const e of events) {
-      console.log(`received event: ${JSON.stringify(e)}`);
-    }
+    console.log('🚀 ~ /events', events);
+
+    // TODO use these events to trigger actions in your App if required
   }, process.env.SERVER_WEBHOOK_SECRET)
 );
 
@@ -310,8 +314,7 @@ app.use(
   SignTransactionHandler(
     Environment.Test,
     (req: SignTransactionRequest, resp: SignTransactionResponse) => {
-      console.log('🚀 ~ /sign_transaction');
-      console.log('🚀 ~ req', req);
+      console.log('🚀 ~ /sign_transaction', req);
 
       function checkIsValid() {
         // TODO
