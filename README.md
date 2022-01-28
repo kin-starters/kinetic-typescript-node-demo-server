@@ -7,7 +7,8 @@
 `.env`
 
 ```
-SECRET_KEY=Your App Account Secret Key
+APP_INDEX=Your App App Index
+PRIVATE_KEY=Your App Account Secret Key
 SERVER_WEBHOOK_SECRET=Your Webhook Secret
 ```
 

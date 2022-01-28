@@ -29,9 +29,9 @@ app.use(cors());
 app.use(express.json());
 
 // Set up Kin client
-let kinClient = new Client(Environment.Test, { appIndex: 0 });
-const appPrivateKey = PrivateKey.fromString(process.env.SECRET_KEY);
-const appPublicKey = appPrivateKey?.publicKey()?.toBase58();
+let kinClient;
+const appPrivateKey = PrivateKey.fromString(process.env.PRIVATE_KEY);
+let appTokenAccounts = [];
 
 // List of Users
 const users = {};
@@ -66,8 +66,15 @@ app.get('/status', (req, res) => {
   console.log('🚀 ~ /status', kinClient?.appIndex || 'Not Instantiated');
   res.send(
     JSON.stringify({
-      appIndex: kinClient ? kinClient.appIndex : 0,
-      users: Object.keys(users),
+      appIndex: kinClient ? kinClient.appIndex : null,
+      env: kinClient ? kinClient.env : null,
+      users: Object.keys(users).map(
+        (user) =>
+          user && {
+            name: user,
+            publicKey: users[user].privateKey.publicKey().toBase58(),
+          }
+      ),
       transactions,
     })
   );
@@ -79,11 +86,35 @@ interface AsyncRequest {
 }
 async function setUpServer({ req, res }: AsyncRequest) {
   const env = req.query.env === 'Prod' ? Environment.Prod : Environment.Test;
-  const appIndex = Number(req.query.appIndex);
-  kinClient = new Client(env, { appIndex });
-  console.log('🚀 ~ kinClient', kinClient);
 
-  res.sendStatus(201);
+  try {
+    const appIndex = Number(process.env.APP_INDEX);
+
+    if (!appIndex) throw new Error('No App Index');
+
+    kinClient = new Client(env, { appIndex });
+    console.log('🚀 ~ kinClient appIndex', kinClient.appIndex);
+
+    // test App Hot Wallet exists
+    try {
+      const balance = await kinClient.getBalance(appPrivateKey.publicKey());
+      console.log('🚀 ~ balance', balance);
+    } catch (error) {
+      // if not, create the account
+      await kinClient.createAccount(appPrivateKey);
+      const balance = await kinClient.getBalance(appPrivateKey.publicKey());
+      console.log('🚀 ~ balance', balance);
+    }
+
+    appTokenAccounts = await kinClient.resolveTokenAccounts(
+      appPrivateKey.publicKey()
+    );
+
+    res.sendStatus(201);
+  } catch (error) {
+    console.log('🚀 ~ error', error);
+    res.sendStatus(400);
+  }
 }
 
 app.post('/setup', (req, res) => {
@@ -131,7 +162,7 @@ async function getBalance({ req, res }: AsyncRequest) {
         const { kinTokenAccounts } = users[user];
         account = kinTokenAccounts[0];
       } else {
-        account = appPrivateKey.publicKey();
+        account = appTokenAccounts[0];
       }
       const balance = await kinClient.getBalance(account);
       console.log('🚀 ~ balance', balance);
@@ -165,10 +196,11 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
         const { kinTokenAccounts } = users[to];
         destination = kinTokenAccounts[0];
       } else {
-        destination = appPrivateKey.publicKey();
+        destination = appTokenAccounts[0];
       }
 
       const quarks = kinToQuarks(amount);
+      console.log('🚀 ~ destination', destination);
 
       const buffer = await kinClient.requestAirdrop(destination, quarks);
       const transactionId = bs58.encode(buffer);
@@ -267,7 +299,7 @@ async function submitPayment({ req, res }: AsyncRequest) {
         const { kinTokenAccounts } = users[to];
         destination = kinTokenAccounts[0];
       } else {
-        destination = appPrivateKey.publicKey();
+        destination = appTokenAccounts[0];
       }
 
       const quarks = kinToQuarks(amount);
@@ -343,6 +375,9 @@ app.use(function (req, res) {
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log(
-    `Kin App (Public Key - ${appPublicKey}) listening at http://localhost:${port}`
+    `Kin Node SDK App
+App Index ${process.env.APP_INDEX}
+Public Key ${process.env.PUBLIC_KEY}
+Listening at http://localhost:${port}`
   );
 });
