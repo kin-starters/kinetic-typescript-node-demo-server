@@ -30,11 +30,15 @@ app.use(express.json());
 
 // Set up Kin client
 let kinClient;
+let kinClientEnv = 'Test';
 const appPrivateKey = PrivateKey.fromString(process.env.PRIVATE_KEY);
 let appTokenAccounts = [];
 
 // List of Users
-const users = {};
+const users = {
+  Test: {},
+  Prod: {},
+};
 interface SaveKinAccount {
   name: string;
   privateKey: PrivateKey;
@@ -46,7 +50,7 @@ function saveKinAccount({
   kinTokenAccounts,
 }: SaveKinAccount) {
   // TODO save your account data securely
-  users[name] = { privateKey, kinTokenAccounts };
+  users[kinClientEnv][name] = { privateKey, kinTokenAccounts };
   console.log('🚀 ~ users', users);
 }
 
@@ -68,13 +72,18 @@ app.get('/status', (req, res) => {
     JSON.stringify({
       appIndex: kinClient ? kinClient.appIndex : null,
       env: kinClient ? kinClient.env : null,
-      users: Object.keys(users).map(
-        (user) =>
-          user && {
-            name: user,
-            publicKey: users[user].privateKey.publicKey().toBase58(),
-          }
-      ),
+      users: [
+        { name: 'App', publicKey: appPrivateKey.publicKey().toBase58() },
+        ...Object.keys(users[kinClientEnv]).map(
+          (user) =>
+            user && {
+              name: user,
+              publicKey: users[kinClientEnv][user].privateKey
+                .publicKey()
+                .toBase58(),
+            }
+        ),
+      ],
       transactions,
     })
   );
@@ -92,23 +101,25 @@ async function setUpServer({ req, res }: AsyncRequest) {
 
     if (!appIndex) throw new Error('No App Index');
 
-    kinClient = new Client(env, { appIndex });
-    console.log('🚀 ~ kinClient appIndex', kinClient.appIndex);
+    const newKinClient = new Client(env, { appIndex });
 
     // test App Hot Wallet exists
     try {
-      const balance = await kinClient.getBalance(appPrivateKey.publicKey());
-      console.log('🚀 ~ balance', balance);
+      const balance = await newKinClient.getBalance(appPrivateKey.publicKey());
+      console.log('🚀 ~ App balance', balance);
     } catch (error) {
       // if not, create the account
-      await kinClient.createAccount(appPrivateKey);
-      const balance = await kinClient.getBalance(appPrivateKey.publicKey());
-      console.log('🚀 ~ balance', balance);
+      await newKinClient.createAccount(appPrivateKey);
+      const balance = await newKinClient.getBalance(appPrivateKey.publicKey());
+      console.log('🚀 ~ App balance', balance);
     }
 
-    appTokenAccounts = await kinClient.resolveTokenAccounts(
+    appTokenAccounts = await newKinClient.resolveTokenAccounts(
       appPrivateKey.publicKey()
     );
+
+    kinClient = newKinClient;
+    kinClientEnv = env === Environment.Prod ? 'Prod' : 'Test';
 
     res.sendStatus(201);
   } catch (error) {
@@ -128,7 +139,7 @@ async function createKinAccount({ req, res }: AsyncRequest) {
   try {
     if (typeof name === 'string') {
       const privateKey = PrivateKey.random();
-      // Create Account - doesn't return anything
+
       await kinClient.createAccount(privateKey);
 
       // Resolve Token Account
@@ -158,8 +169,8 @@ async function getBalance({ req, res }: AsyncRequest) {
   try {
     if (typeof user === 'string') {
       let account;
-      if (users[user]) {
-        const { kinTokenAccounts } = users[user];
+      if (users[kinClientEnv][user]) {
+        const { kinTokenAccounts } = users[kinClientEnv][user];
         account = kinTokenAccounts[0];
       } else {
         account = appTokenAccounts[0];
@@ -192,8 +203,8 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
   if (typeof to === 'string' && typeof amount === 'string') {
     try {
       let destination;
-      if (users[to]) {
-        const { kinTokenAccounts } = users[to];
+      if (users[kinClientEnv][to]) {
+        const { kinTokenAccounts } = users[kinClientEnv][to];
         destination = kinTokenAccounts[0];
       } else {
         destination = appTokenAccounts[0];
@@ -287,16 +298,16 @@ async function submitPayment({ req, res }: AsyncRequest) {
   if (typeof from === 'string' && typeof to === 'string') {
     try {
       let sender;
-      if (users[from]) {
-        const { privateKey } = users[from];
+      if (users[kinClientEnv][from]) {
+        const { privateKey } = users[kinClientEnv][from];
         sender = privateKey;
       } else {
         sender = appPrivateKey;
       }
 
       let destination;
-      if (users[to]) {
-        const { kinTokenAccounts } = users[to];
+      if (users[kinClientEnv][to]) {
+        const { kinTokenAccounts } = users[kinClientEnv][to];
         destination = kinTokenAccounts[0];
       } else {
         destination = appTokenAccounts[0];
@@ -377,7 +388,7 @@ app.listen(port, () => {
   console.log(
     `Kin Node SDK App
 App Index ${process.env.APP_INDEX}
-Public Key ${process.env.PUBLIC_KEY}
+Public Key ${appPrivateKey.publicKey().toBase58()}
 Listening at http://localhost:${port}`
   );
 });
