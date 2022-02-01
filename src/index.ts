@@ -93,7 +93,7 @@ interface AsyncRequest {
   req: Request;
   res: Response;
 }
-async function setUpServer({ req, res }: AsyncRequest) {
+async function setUpKinClient({ req, res }: AsyncRequest) {
   const env = req.query.env === 'Prod' ? Environment.Prod : Environment.Test;
 
   try {
@@ -130,7 +130,7 @@ async function setUpServer({ req, res }: AsyncRequest) {
 
 app.post('/setup', (req, res) => {
   console.log('🚀 ~ /setup');
-  setUpServer({ req, res });
+  setUpKinClient({ req, res });
 });
 
 async function createKinAccount({ req, res }: AsyncRequest) {
