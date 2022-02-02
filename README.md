@@ -11,7 +11,7 @@ This Kin BE Demo Server is compatible with our [Kin SDK Front End](https://githu
 ## Prep
 - Your App is registered on the [Kin Developer Portal](https://portal.kin.org/) so you can take advantage of the [Kin Rewards Engine](https://developer.kin.org/docs/the-kre-explained/) and get your App Index
 - Environment variable for your App Index
-- Environment variable for your Private Key. Visit [The Kin Laboratory](https://laboratory.kin.org/home) if you want help getting started with Keypairs for testing.
+- Environment variable for your Private Key. Visit [The Kin Laboratory](https://laboratory.kin.org/home) if you want help getting started with Keypairs for testing
 - Environment variable for your Webhook Secret (if using webhooks)
 
 `.env`
