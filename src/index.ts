@@ -31,11 +31,16 @@ app.use(express.json());
 // Set up Kin client
 let kinClient;
 let kinClientEnv = 'Test';
-const appPrivateKey = PrivateKey.fromString(process.env.PRIVATE_KEY);
+const appHotWallet = PrivateKey.fromString(process.env.PRIVATE_KEY);
 let appTokenAccounts = [];
 
+interface User {
+  privateKey: PrivateKey;
+  publicKey: PublicKey;
+  kinTokenAccounts: PublicKey[];
+}
 // List of Users
-const users = {
+const users: Record<'Test' | 'Prod', Record<string, User>> = {
   Test: {},
   Prod: {},
 };
@@ -50,7 +55,11 @@ function saveKinAccount({
   kinTokenAccounts,
 }: SaveKinAccount) {
   // TODO save your account data securely
-  users[kinClientEnv][name] = { privateKey, kinTokenAccounts };
+  users[kinClientEnv][name] = {
+    privateKey,
+    publicKey: privateKey.publicKey(),
+    kinTokenAccounts,
+  };
   console.log('🚀 ~ users', users);
 }
 
@@ -73,14 +82,12 @@ app.get('/status', (req, res) => {
       appIndex: kinClient ? kinClient.appIndex : null,
       env: kinClient ? kinClient.env : null,
       users: [
-        { name: 'App', publicKey: appPrivateKey.publicKey().toBase58() },
+        { name: 'App', publicKey: appHotWallet.publicKey().toBase58() },
         ...Object.keys(users[kinClientEnv]).map(
           (user) =>
             user && {
               name: user,
-              publicKey: users[kinClientEnv][user].privateKey
-                .publicKey()
-                .toBase58(),
+              publicKey: users[kinClientEnv][user].publicKey.toBase58(),
             }
         ),
       ],
@@ -105,17 +112,17 @@ async function setUpKinClient({ req, res }: AsyncRequest) {
 
     // test App Hot Wallet exists
     try {
-      const balance = await newKinClient.getBalance(appPrivateKey.publicKey());
+      const balance = await newKinClient.getBalance(appHotWallet.publicKey());
       console.log('🚀 ~ App balance', balance);
     } catch (error) {
       // if not, create the account
-      await newKinClient.createAccount(appPrivateKey);
-      const balance = await newKinClient.getBalance(appPrivateKey.publicKey());
+      await newKinClient.createAccount(appHotWallet);
+      const balance = await newKinClient.getBalance(appHotWallet.publicKey());
       console.log('🚀 ~ App balance', balance);
     }
 
     appTokenAccounts = await newKinClient.resolveTokenAccounts(
-      appPrivateKey.publicKey()
+      appHotWallet.publicKey()
     );
 
     kinClient = newKinClient;
@@ -140,9 +147,11 @@ async function createKinAccount({ req, res }: AsyncRequest) {
     if (typeof name === 'string') {
       const privateKey = PrivateKey.random();
 
+      // Creates a Solana Account and a Kin Token Account for Receving Kin
       await kinClient.createAccount(privateKey);
 
       // Resolve Token Account
+      // Array of Public Keys in case there are multiple Token Accounts
       const kinTokenAccounts = await kinClient.resolveTokenAccounts(
         privateKey.publicKey()
       );
@@ -168,14 +177,16 @@ async function getBalance({ req, res }: AsyncRequest) {
   console.log('🚀 ~ getBalance ', user);
   try {
     if (typeof user === 'string') {
-      let account;
+      let publicKey; // use for first attempt
+
       if (users[kinClientEnv][user]) {
-        const { kinTokenAccounts } = users[kinClientEnv][user];
-        account = kinTokenAccounts[0];
+        const { publicKey: pk } = users[kinClientEnv][user];
+        publicKey = pk;
       } else {
-        account = appTokenAccounts[0];
+        publicKey = appHotWallet.publicKey();
       }
-      const balance = await kinClient.getBalance(account);
+      console.log('🚀 ~ publicKey', publicKey);
+      const balance = await kinClient.getBalance(publicKey);
       console.log('🚀 ~ balance', balance);
 
       const balanceInKin = quarksToKin(balance);
@@ -200,28 +211,42 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
   const to = req?.query?.to || '';
   const amount = req?.query?.amount || '0';
   console.log('🚀 ~ requestAirdrop', to, amount);
+
   if (typeof to === 'string' && typeof amount === 'string') {
+    let publicKey;
+    let tokenAccount;
+
+    if (users[kinClientEnv][to]) {
+      const { publicKey: pk, kinTokenAccounts } = users[kinClientEnv][to];
+      publicKey = pk;
+      tokenAccount = kinTokenAccounts[0];
+    } else {
+      publicKey = appHotWallet.publicKey();
+      tokenAccount = appTokenAccounts[0];
+    }
+
+    const quarks = kinToQuarks(amount);
+
+    // Try to airdrop to publicKey
     try {
-      let destination;
-      if (users[kinClientEnv][to]) {
-        const { kinTokenAccounts } = users[kinClientEnv][to];
-        destination = kinTokenAccounts[0];
-      } else {
-        destination = appTokenAccounts[0];
-      }
-
-      const quarks = kinToQuarks(amount);
-      console.log('🚀 ~ destination', destination);
-
-      const buffer = await kinClient.requestAirdrop(destination, quarks);
+      const buffer = await kinClient.requestAirdrop(publicKey, quarks);
+      console.log('🚀 ~ airdrop successful to publicKey', to, amount);
       const transactionId = bs58.encode(buffer);
       saveKinTransaction({ transactionId });
-
-      console.log('🚀 ~ airdrop successful', to, amount);
       res.sendStatus(200);
     } catch (error) {
-      console.log('🚀 ~ error', error);
-      res.sendStatus(400);
+      console.log('🚀 ~ error airdrop to publicKey failed', error);
+      // If publicKey fails, try again to tokenAccount. This might be a bug. It should work withe the publicKey
+      try {
+        const buffer = await kinClient.requestAirdrop(tokenAccount, quarks);
+        console.log('🚀 ~ airdrop successful to tokenAccount', to, amount);
+        const transactionId = bs58.encode(buffer);
+        saveKinTransaction({ transactionId });
+        res.sendStatus(200);
+      } catch (err) {
+        console.log('🚀 ~ err', err);
+        res.sendStatus(400);
+      }
     }
   }
 }
@@ -302,15 +327,15 @@ async function submitPayment({ req, res }: AsyncRequest) {
         const { privateKey } = users[kinClientEnv][from];
         sender = privateKey;
       } else {
-        sender = appPrivateKey;
+        sender = appHotWallet;
       }
 
       let destination;
       if (users[kinClientEnv][to]) {
-        const { kinTokenAccounts } = users[kinClientEnv][to];
-        destination = kinTokenAccounts[0];
+        const { publicKey } = users[kinClientEnv][to];
+        destination = publicKey;
       } else {
-        destination = appTokenAccounts[0];
+        destination = appHotWallet.publicKey();
       }
 
       const quarks = kinToQuarks(amount);
@@ -342,6 +367,13 @@ app.post('/send', (req, res) => {
 });
 
 // Webhooks
+
+// I use localtunnel for doing local development
+// https://theboroer.github.io/localtunnel-www/
+
+// You could also use ngrok
+// https://ngrok.com/
+
 app.use(
   '/events',
   EventsHandler((events: Event[]) => {
@@ -359,7 +391,7 @@ app.use(
       console.log('🚀 ~ /sign_transaction', req);
 
       function checkIsValid() {
-        // TODO
+        // IMPORTANT!
         // Implement transaction approval here!
         // This webhook will approve all incoming transactions
         return true;
@@ -369,7 +401,7 @@ app.use(
       console.log('🚀 ~ isValid', isValid);
 
       if (isValid) {
-        resp.sign(appPrivateKey);
+        resp.sign(appHotWallet);
       } else {
         resp.reject();
       }
@@ -388,7 +420,7 @@ app.listen(port, () => {
   console.log(
     `Kin Node SDK App
 App Index ${process.env.APP_INDEX}
-Public Key ${appPrivateKey.publicKey().toBase58()}
+Public Key ${appHotWallet.publicKey().toBase58()}
 Listening at http://localhost:${port}`
   );
 });
