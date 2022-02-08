@@ -6,7 +6,7 @@
 
 
 ## Front End
-This Kin BE Demo Server is compatible with our [Kin SDK Front End](https://github.com/kinecosystem/kin-sdk-demo-fe)
+This Kin BE Demo Server is compatible with our [Kin SDK Front End](https://github.com/kin-labs/kin-demo-web-sdk-and-server-fe)
 
 ## Prep
 - Your App is registered on the [Kin Developer Portal](https://portal.kin.org/) so you can take advantage of the [Kin Rewards Engine](https://developer.kin.org/docs/the-kre-explained/) and get your App Index
