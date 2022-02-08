@@ -31,8 +31,13 @@ app.use(express.json());
 // Set up Kin client
 let kinClient;
 let kinClientEnv = 'Test';
-const appHotWallet = PrivateKey.fromString(process.env.PRIVATE_KEY);
+let appHotWallet;
 let appTokenAccounts = [];
+try {
+  appHotWallet = PrivateKey.fromString(process.env.PRIVATE_KEY);
+} catch (error) {
+  console.log('🚀 ~ It looks like your PRIVATE_KEY is missing.');
+}
 
 interface User {
   privateKey: PrivateKey;
@@ -417,10 +422,15 @@ app.use(function (req, res) {
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
-  console.log(
-    `Kin Node SDK App
+  try {
+    console.log(
+      `Kin Node SDK App
 App Index ${process.env.APP_INDEX}
 Public Key ${appHotWallet.publicKey().toBase58()}
 Listening at http://localhost:${port}`
-  );
+    );
+  } catch (error) {
+    console.log('🚀 ~ Have you included all of your Environment variables?');
+    throw new Error();
+  }
 });
