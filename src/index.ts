@@ -431,6 +431,6 @@ Listening at http://localhost:${port}`
     );
   } catch (error) {
     console.log('🚀 ~ Have you included all of your Environment variables?');
-    throw new Error();
+    throw new Error('Missing .env file?');
   }
 });
