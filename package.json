@@ -10,6 +10,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
+  "engines": {
+    "npm": "6",
+    "node": "12"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
