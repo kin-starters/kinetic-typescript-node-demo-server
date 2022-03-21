@@ -36,7 +36,7 @@ let appTokenAccounts = [];
 try {
   appHotWallet = PrivateKey.fromString(process.env.PRIVATE_KEY);
 } catch (error) {
-  console.log('🚀 ~ It looks like your PRIVATE_KEY is missing.');
+  console.log('🚀 ~ It looks like your PRIVATE_KEY is missing or invalid.');
 }
 
 interface User {
