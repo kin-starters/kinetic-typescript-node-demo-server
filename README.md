@@ -21,7 +21,7 @@ APP_INDEX=Your App App Index
 PRIVATE_KEY=Your App Account Secret Key
 SERVER_WEBHOOK_SECRET=Your Webhook Secret
 ```
-## Install Packages
+## Install Packages - Make sure you're using Node 12
 
 ```
 npm i
