@@ -59,7 +59,8 @@ function saveKinAccount({
   privateKey,
   kinTokenAccounts,
 }: SaveKinAccount) {
-  // TODO save your account data securely
+  // %%%%%%%%%%%% IMPORTANT %%%%%%%%%%%%
+  // TODO - Save your account data securely
   users[kinClientEnv][name] = {
     privateKey,
     publicKey: privateKey.publicKey(),
@@ -74,7 +75,7 @@ interface SaveKinTransaction {
   transactionId: string;
 }
 function saveKinTransaction({ transactionId }: SaveKinTransaction) {
-  // TODO save your transaction data if required
+  // TODO - save your transaction data if required
   transactions.push(transactionId);
   console.log('🚀 ~ transactions', transactions);
 }
@@ -246,6 +247,7 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
         const buffer = await kinClient.requestAirdrop(tokenAccount, quarks);
         console.log('🚀 ~ airdrop successful to tokenAccount', to, amount);
         const transactionId = bs58.encode(buffer);
+        console.log('🚀 ~ transactionId', transactionId);
         saveKinTransaction({ transactionId });
         res.sendStatus(200);
       } catch (err) {

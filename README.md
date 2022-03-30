@@ -46,4 +46,6 @@ yarn start
 ## If you're just getting started, you might want to look at [this](https://developer.kin.org/tutorials/#getting-started) first...
 
 ## Dev Community
-Join us on [Discord](https://discord.com/invite/kdRyUNmHDn) if you're looking for support with your App or to connect with other active Kin developers
+Join us on [Discord](https://discord.com/invite/kdRyUNmHDn) if you're looking for support with your App or to connect with other active Kin developers.
+
+If you're stuck or have any questions you'd like answering, get in touch on our [kin-node](https://discord.com/channels/808859554997469244/811117045742960640) channel.
