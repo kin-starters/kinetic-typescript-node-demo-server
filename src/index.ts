@@ -271,13 +271,9 @@ async function getTransaction({ req, res }: AsyncRequest) {
   if (typeof transaction === 'string') {
     try {
       const transactionBuffer = bs58.decode(transaction);
-      const {
-        txId,
-        txState,
-        payments,
-        ...rest
-      } = await kinClient.getTransaction(transactionBuffer);
-      console.log('🚀 ~ rest', rest);
+      const { txId, txState, payments } = await kinClient.getTransaction(
+        transactionBuffer
+      );
 
       if (txState === 0) throw new Error("Can't find transaction");
 
@@ -287,8 +283,7 @@ async function getTransaction({ req, res }: AsyncRequest) {
       let decodedPayments;
       if (payments?.length > 0) {
         decodedPayments = payments.map(
-          ({ sender, destination, quarks, type, ...rest }) => {
-            console.log('🚀 ~ rest', rest);
+          ({ sender, destination, quarks, type }) => {
             const paymentObject = {
               type,
               quarks,
