@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bs58 from 'bs58';
-import BigNumber from 'bignumber.js';
 
 import {
   Client,
