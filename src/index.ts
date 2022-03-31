@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bs58 from 'bs58';
+import BigNumber from 'bignumber.js';
 
 import {
   Client,
@@ -12,6 +13,7 @@ import {
   quarksToKin,
   TransactionType,
   PublicKey,
+  Memo,
 } from '@kinecosystem/kin-sdk-v2';
 
 import {
@@ -269,9 +271,13 @@ async function getTransaction({ req, res }: AsyncRequest) {
   if (typeof transaction === 'string') {
     try {
       const transactionBuffer = bs58.decode(transaction);
-      const { txId, txState, payments } = await kinClient.getTransaction(
-        transactionBuffer
-      );
+      const {
+        txId,
+        txState,
+        payments,
+        ...rest
+      } = await kinClient.getTransaction(transactionBuffer);
+      console.log('🚀 ~ rest', rest);
 
       if (txState === 0) throw new Error("Can't find transaction");
 
@@ -281,7 +287,8 @@ async function getTransaction({ req, res }: AsyncRequest) {
       let decodedPayments;
       if (payments?.length > 0) {
         decodedPayments = payments.map(
-          ({ sender, destination, quarks, type }) => {
+          ({ sender, destination, quarks, type, ...rest }) => {
+            console.log('🚀 ~ rest', rest);
             const paymentObject = {
               type,
               quarks,
@@ -348,11 +355,25 @@ async function submitPayment({ req, res }: AsyncRequest) {
       const quarks = kinToQuarks(amount);
       const typeEnum = getTypeEnum(type);
 
+      // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      const string = 'Str must be 29 chars or less.';
+      let foreignKey = Buffer.alloc(29);
+      if (string) {
+        foreignKey = Buffer.from(string);
+      }
+      console.log('🚀 ~ foreignKey length', foreignKey.toString().length);
+
+      const memo = Memo.new(1, typeEnum, 360, foreignKey).buffer.toString(
+        'base64'
+      );
+      // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
       const paymentObject: Payment = {
         sender,
         destination,
         quarks,
         type: typeEnum,
+        memo,
       };
 
       const buffer = await kinClient.submitPayment(paymentObject);
