@@ -43,6 +43,90 @@ or
 ```
 yarn start
 ```
+## Endpoints
+### Status
+```
+GET /status
+
+Response:
+200 {
+    "appIndex": 360,
+    "env": 1,
+    "transactions": [],
+    "users": [
+        {
+            "name": "App",
+            "publicKey": "BsiFeVHeyYv56rBfmotqbeDU7Q9rs8SYkXRsm3umsYvV"
+        }
+    ]
+}
+
+
+```
+Returns
+
+### Setup
+ ```
+ POST /setup?env=Test or setup?env=Prod
+
+Response
+200 or 400
+```
+### Create Account
+ ```
+ POST /account?name=Test%20User
+
+Response
+201 or 400
+```
+### Balance
+ ```
+ GET /balance?user=Test%20User
+
+Response
+'999' or 400
+```
+### Airdrop
+ ```
+ POST /airdrop?to=Test%20User&amount=2000
+
+Response
+200 or 400
+```
+### Transfer Kin
+ ```
+ POST /send
+
+ Request Body
+ {
+    "from": "App",
+    "to": "Test User",
+    "amount": "2000",
+    "type": "Earn"
+}
+
+Response
+200 or 400
+```
+### Transaction Info
+ ```
+ GET /transaction?transaction_id=uxMepF4pYrexvFKJEsU2ATzxU1MSJkqx51DCEek5SszAPygRUgsFYT8Ai6yJYLyKBJuqTd4sBnsC9wDWpCFWXi4
+
+
+Response
+200 {
+    "payments": [
+        {
+            "destination": "GTpeCtraqEzkbSChQCmakFqyHpNU3iensTWnX58yQrk6",
+            "quarks": 100000000,
+            "sender": "89CLzhYJzZKs8mZ3GkwPeJfb3wHVJqGunyryBNjJhiDH",
+            "type": 1
+        }
+    ],
+    "txState": 3
+} 
+or 400
+```
 ## If you're just getting started, you might want to look at [this](https://developer.kin.org/tutorials/#getting-started) first...
 
 ## Dev Community

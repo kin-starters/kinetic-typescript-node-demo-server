@@ -82,6 +82,8 @@ function saveKinTransaction({ transactionId }: SaveKinTransaction) {
 
 // Endpoints
 app.get('/status', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /status', kinClient?.appIndex || 'Not Instantiated');
   res.send(
     JSON.stringify({
@@ -134,14 +136,18 @@ async function setUpKinClient({ req, res }: AsyncRequest) {
     kinClient = newKinClient;
     kinClientEnv = env === Environment.Prod ? 'Prod' : 'Test';
 
-    res.sendStatus(201);
+    res.sendStatus(200);
   } catch (error) {
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     console.log('🚀 ~ error', error);
     res.sendStatus(400);
   }
 }
 
 app.post('/setup', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /setup');
   setUpKinClient({ req, res });
 });
@@ -168,12 +174,16 @@ async function createKinAccount({ req, res }: AsyncRequest) {
       throw new Error('No valid name');
     }
   } catch (error) {
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     console.log('🚀 ~ error', error);
     res.sendStatus(400);
   }
 }
 
 app.post('/account', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /account');
   createKinAccount({ req, res });
 });
@@ -203,12 +213,16 @@ async function getBalance({ req, res }: AsyncRequest) {
       throw new Error('No valid user');
     }
   } catch (error) {
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     console.log('🚀 ~ error', error);
     res.sendStatus(400);
   }
 }
 
 app.get('/balance', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /balance ');
   getBalance({ req, res });
 });
@@ -251,6 +265,12 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
         saveKinTransaction({ transactionId });
         res.sendStatus(200);
       } catch (err) {
+        console.log(
+          '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        );
+        console.log(
+          '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        );
         console.log('🚀 ~ err', err);
         res.sendStatus(400);
       }
@@ -259,12 +279,14 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
 }
 
 app.post('/airdrop', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /airdrop ');
   requestAirdrop({ req, res });
 });
 
 async function getTransaction({ req, res }: AsyncRequest) {
-  const transaction = req?.query?.transaction || '';
+  const transaction = req?.query?.transaction_id || '';
   console.log('🚀 ~ getTransaction', transaction);
   if (typeof transaction === 'string') {
     try {
@@ -297,6 +319,12 @@ async function getTransaction({ req, res }: AsyncRequest) {
 
       res.send(JSON.stringify({ txState, payments: decodedPayments || [] }));
     } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
       console.log('🚀 ~ error', error);
       res.sendStatus(400);
     }
@@ -304,6 +332,8 @@ async function getTransaction({ req, res }: AsyncRequest) {
 }
 
 app.get('/transaction', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /transaction ');
   getTransaction({ req, res });
 });
@@ -362,6 +392,12 @@ async function submitPayment({ req, res }: AsyncRequest) {
       console.log('🚀 ~ payment successful', from, to, amount, type);
       res.sendStatus(200);
     } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
       console.log('🚀 ~ error', error);
       res.sendStatus(400);
     }
@@ -369,6 +405,8 @@ async function submitPayment({ req, res }: AsyncRequest) {
 }
 
 app.post('/send', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /send ');
   submitPayment({ req, res });
 });
@@ -384,6 +422,8 @@ app.post('/send', (req, res) => {
 app.use(
   '/events',
   EventsHandler((events: Event[]) => {
+    console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+    console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
     console.log('🚀 ~ /events', events);
 
     // TODO use these events to trigger actions in your App if required
@@ -395,6 +435,12 @@ app.use(
   SignTransactionHandler(
     Environment.Test,
     (req: SignTransactionRequest, resp: SignTransactionResponse) => {
+      console.log(
+        '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+      );
+      console.log(
+        '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+      );
       console.log('🚀 ~ /sign_transaction', req);
 
       function checkIsValid() {
