@@ -63,7 +63,6 @@ Response:
 
 
 ```
-Returns
 
 ### Setup
  ```
