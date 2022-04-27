@@ -303,12 +303,13 @@ async function getTransaction({ req, res }: AsyncRequest) {
       let decodedPayments;
       if (payments?.length > 0) {
         decodedPayments = payments.map(
-          ({ sender, destination, quarks, type }) => {
+          ({ sender, destination, quarks, type, memo }) => {
             const paymentObject = {
               type,
               quarks,
               sender: sender.toBase58(),
               destination: destination.toBase58(),
+              memo,
             };
 
             return paymentObject;
@@ -316,7 +317,6 @@ async function getTransaction({ req, res }: AsyncRequest) {
         );
         console.log('🚀 ~ decodedPayments', decodedPayments);
       }
-
       res.send(JSON.stringify({ txState, payments: decodedPayments || [] }));
     } catch (error) {
       console.log(
