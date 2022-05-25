@@ -404,6 +404,45 @@ async function submitPayment({ req, res }: AsyncRequest) {
   }
 }
 
+async function submitEarnBatch({ req, res }: AsyncRequest) {
+  const { from, to, amount, type } = req.body;
+  console.log('🚀 ~ submitEarnBatch', from, to, amount, type);
+
+  if (typeof from === 'string' && typeof to === 'string') {
+    try {
+      let sender;
+      if (users[kinClientEnv][from]) {
+        const { privateKey } = users[kinClientEnv][from];
+        sender = privateKey;
+      } else {
+        sender = appHotWallet;
+      }
+
+      const buffer = await kinClient.submitEarnBatch({
+        sender: sender,
+        earns: Object.values(users[kinClientEnv]).map((destination) => {
+          return {
+            destination: (destination as any).publicKey,
+            quarks: kinToQuarks('1'),
+          };
+        }),
+      });
+
+      console.log('🚀 ~ earn batch payment successful', from, to, amount, type);
+      res.sendStatus(200);
+    } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
 app.post('/send', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
@@ -462,6 +501,13 @@ app.use(
     process.env.SERVER_WEBHOOK_SECRET
   )
 );
+
+app.post('/earn_batch', async (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /batch ');
+  submitEarnBatch({ req, res });
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res) {
