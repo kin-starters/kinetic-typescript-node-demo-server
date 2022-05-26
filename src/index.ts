@@ -404,6 +404,13 @@ async function submitPayment({ req, res }: AsyncRequest) {
   }
 }
 
+app.post('/send', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /send ');
+  submitPayment({ req, res });
+});
+
 async function submitEarnBatch({ req, res }: AsyncRequest) {
   const { from, to, amount, type } = req.body;
   console.log('🚀 ~ submitEarnBatch', from, to, amount, type);
@@ -443,11 +450,11 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
   }
 }
 
-app.post('/send', (req, res) => {
+app.post('/earn_batch', async (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /send ');
-  submitPayment({ req, res });
+  console.log('🚀 ~ /earn_batch ');
+  submitEarnBatch({ req, res });
 });
 
 // Webhooks
@@ -501,13 +508,6 @@ app.use(
     process.env.SERVER_WEBHOOK_SECRET
   )
 );
-
-app.post('/earn_batch', async (req, res) => {
-  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /batch ');
-  submitEarnBatch({ req, res });
-});
 
 // catch 404 and forward to error handler
 app.use(function (req, res) {
