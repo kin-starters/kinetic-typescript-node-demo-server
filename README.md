@@ -107,6 +107,22 @@ Response
 Response
 200 or 400
 ```
+### Transfer Kin in Batch of Earn Transactions
+ ```
+ POST /earn_batch
+
+ Request Body
+ {
+    "from": "App",
+    "batch": [
+        {to: "User1", amount: "111"}, 
+        {to: "User2", amount: "333"}
+    ]
+}
+
+Response
+200 or 400
+```
 ### Transaction Info
  ```
  GET /transaction?transaction_id=uxMepF4pYrexvFKJEsU2ATzxU1MSJkqx51DCEek5SszAPygRUgsFYT8Ai6yJYLyKBJuqTd4sBnsC9wDWpCFWXi4
@@ -126,6 +142,15 @@ Response
 } 
 or 400
 ```
+## Webhooks Local Development
+I use localtunnel for doing local development: https://theboroer.github.io/localtunnel-www/
+```
+lt --port 3001 --subdomain <webhook domain stored in the developer portal for this app>
+```
+
+
+You could also use ngrok: https://ngrok.com/
+
 ## If you're just getting started, you might want to look at [this](https://developer.kin.org/tutorials/#getting-started) first...
 
 ## Dev Community

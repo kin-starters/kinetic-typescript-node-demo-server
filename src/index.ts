@@ -6,6 +6,7 @@ import bs58 from 'bs58';
 import {
   Client,
   Payment,
+  Earn,
   Environment,
   kinToQuarks,
   PrivateKey,
@@ -223,7 +224,7 @@ async function getBalance({ req, res }: AsyncRequest) {
 app.get('/balance', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /balance ');
+  console.log('🚀 ~ /balance');
   getBalance({ req, res });
 });
 
@@ -281,7 +282,7 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
 app.post('/airdrop', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /airdrop ');
+  console.log('🚀 ~ /airdrop');
   requestAirdrop({ req, res });
 });
 
@@ -334,7 +335,7 @@ async function getTransaction({ req, res }: AsyncRequest) {
 app.get('/transaction', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /transaction ');
+  console.log('🚀 ~ /transaction');
   getTransaction({ req, res });
 });
 
@@ -407,15 +408,15 @@ async function submitPayment({ req, res }: AsyncRequest) {
 app.post('/send', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /send ');
+  console.log('🚀 ~ /send');
   submitPayment({ req, res });
 });
 
 async function submitEarnBatch({ req, res }: AsyncRequest) {
-  const { from, to, amount, type } = req.body;
-  console.log('🚀 ~ submitEarnBatch', from, to, amount, type);
+  const { from, batch } = req.body;
+  console.log('🚀 ~ submitEarnBatch', from, batch);
 
-  if (typeof from === 'string' && typeof to === 'string') {
+  if (typeof from === 'string') {
     try {
       let sender;
       if (users[kinClientEnv][from]) {
@@ -425,17 +426,30 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
         sender = appHotWallet;
       }
 
-      const buffer = await kinClient.submitEarnBatch({
-        sender: sender,
-        earns: Object.values(users[kinClientEnv]).map((destination) => {
-          return {
-            destination: (destination as any).publicKey,
-            quarks: kinToQuarks('1'),
-          };
-        }),
+      const earns: Earn[] = batch.map((earn) => {
+        let destination;
+        if (users[kinClientEnv][earn.to]) {
+          const { publicKey } = users[kinClientEnv][earn.to];
+          destination = publicKey;
+        } else {
+          throw new Error("Can't find user to send to!");
+        }
+
+        return {
+          destination,
+          quarks: kinToQuarks(earn.amount),
+        };
       });
 
-      console.log('🚀 ~ earn batch payment successful', from, to, amount, type);
+      const { txId } = await kinClient.submitEarnBatch({
+        sender,
+        earns,
+      });
+
+      const transactionId = bs58.encode(txId);
+      saveKinTransaction({ transactionId });
+
+      console.log('🚀 ~ earn batch payment successful: ', transactionId);
       res.sendStatus(200);
     } catch (error) {
       console.log(
@@ -453,7 +467,7 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
 app.post('/earn_batch', async (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /earn_batch ');
+  console.log('🚀 ~ /earn_batch');
   submitEarnBatch({ req, res });
 });
 
