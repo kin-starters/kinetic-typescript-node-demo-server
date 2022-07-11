@@ -1,27 +1,18 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import bs58 from 'bs58';
+// import bs58 from 'bs58';
 
 import {
-  Client,
-  Payment,
-  Earn,
-  Environment,
-  kinToQuarks,
-  PrivateKey,
-  quarksToKin,
-  TransactionType,
-  PublicKey,
-} from '@kinecosystem/kin-sdk-v2';
-
-import {
-  Event,
-  EventsHandler,
-  SignTransactionRequest,
-  SignTransactionResponse,
-  SignTransactionHandler,
-} from '@kinecosystem/kin-sdk-v2/dist/webhook';
+  KineticSdk,
+  KineticSdkConfig,
+  MakeTransferBatchOptions,
+  TransferDestination,
+} from '@kin-kinetic/sdk';
+import { Keypair } from '@kin-kinetic/keypair';
+import { Commitment } from '@kin-kinetic/solana';
+import { TransactionType } from '@kin-tools/kin-memo';
+// import { KeypairCompat } from '@kin-tools/keypair-compat';
 
 dotenv.config();
 
@@ -31,40 +22,43 @@ app.use(express.json());
 
 // Set up Kin client
 let kinClient;
-let kinClientEnv = 'Test';
 let appHotWallet;
 let appTokenAccounts = [];
 try {
-  appHotWallet = PrivateKey.fromString(process.env.PRIVATE_KEY);
+  // if deprecated Stellar keypair:
+  // appHotWallet = KeypairCompat.getKeypair(process.env.PRIVATE_KEY);
+
+  // if Solana Keypair:
+  // appHotWallet = Keypair.fromSecretKey(process.env.PRIVATE_KEY);
+  appHotWallet = Keypair.fromMnemonic(process.env.MNEMONIC);
 } catch (error) {
+  console.log('🚀 ~ error', error);
   console.log('🚀 ~ It looks like your PRIVATE_KEY is missing or invalid.');
 }
 
+const kinClientEnv = () => kinClient?.sdkConfig?.environment || 'devnet';
+
 interface User {
-  privateKey: PrivateKey;
-  publicKey: PublicKey;
-  kinTokenAccounts: PublicKey[];
+  privateKey: string;
+  publicKey: string;
+  kinTokenAccounts: string[];
 }
 // List of Users
-const users: Record<'Test' | 'Prod', Record<string, User>> = {
-  Test: {},
-  Prod: {},
+const users: Record<'mainnet' | 'devnet', Record<string, User>> = {
+  mainnet: {},
+  devnet: {},
 };
 interface SaveKinAccount {
   name: string;
-  privateKey: PrivateKey;
-  kinTokenAccounts: PublicKey[];
+  keypair: Keypair;
+  kinTokenAccounts: string[];
 }
-function saveKinAccount({
-  name,
-  privateKey,
-  kinTokenAccounts,
-}: SaveKinAccount) {
+function saveKinAccount({ name, keypair, kinTokenAccounts }: SaveKinAccount) {
   // %%%%%%%%%%%% IMPORTANT %%%%%%%%%%%%
   // TODO - Save your account data securely
-  users[kinClientEnv][name] = {
-    privateKey,
-    publicKey: privateKey.publicKey(),
+  users[kinClientEnv()][name] = {
+    keypair,
+    publicKey: keypair.publicKey,
     kinTokenAccounts,
   };
   console.log('🚀 ~ users', users);
@@ -85,18 +79,18 @@ function saveKinTransaction({ transactionId }: SaveKinTransaction) {
 app.get('/status', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /status', kinClient?.appIndex || 'Not Instantiated');
+  console.log('🚀 ~ /status', kinClient?.sdkConfig.index || 'Not Instantiated');
   res.send(
     JSON.stringify({
-      appIndex: kinClient ? kinClient.appIndex : null,
-      env: kinClient ? kinClient.env : null,
+      appIndex: kinClient ? kinClient.sdkConfig.index : null,
+      env: kinClient ? kinClient.sdkConfig.environment : null,
       users: [
-        { name: 'App', publicKey: appHotWallet.publicKey().toBase58() },
-        ...Object.keys(users[kinClientEnv]).map(
+        { name: 'App', publicKey: appHotWallet.publicKey },
+        ...Object.keys(users[kinClientEnv()]).map(
           (user) =>
             user && {
               name: user,
-              publicKey: users[kinClientEnv][user].publicKey.toBase58(),
+              publicKey: users[kinClientEnv()][user].publicKey,
             }
         ),
       ],
@@ -110,32 +104,47 @@ interface AsyncRequest {
   res: Response;
 }
 async function setUpKinClient({ req, res }: AsyncRequest) {
-  const env = req.query.env === 'Prod' ? Environment.Prod : Environment.Test;
+  const env = req.query.env === 'Mainnet' ? 'mainnet' : 'devnet';
 
   try {
     const appIndex = Number(process.env.APP_INDEX);
+    console.log('🚀 ~ appIndex', appIndex);
 
     if (!appIndex) throw new Error('No App Index');
 
-    const newKinClient = new Client(env, { appIndex });
+    const config: KineticSdkConfig = {
+      environment: 'devnet',
+      index: 1,
+    };
+
+    if (process.env.KINETIC_LOCAL_API) {
+      config.endpoint = process.env.KINETIC_LOCAL_API;
+    }
+
+    const newKineticClient = await KineticSdk.setup(config);
 
     // test App Hot Wallet exists
     try {
-      const balance = await newKinClient.getBalance(appHotWallet.publicKey());
+      const balance = await newKineticClient.getBalance({
+        account: appHotWallet.publicKey,
+      });
       console.log('🚀 ~ App balance', balance);
     } catch (error) {
       // if not, create the account
-      await newKinClient.createAccount(appHotWallet);
-      const balance = await newKinClient.getBalance(appHotWallet.publicKey());
+      await newKineticClient.createAccount(appHotWallet);
+      const balance = await newKineticClient.getBalance({
+        account: appHotWallet.publicKey,
+      });
       console.log('🚀 ~ App balance', balance);
     }
 
-    appTokenAccounts = await newKinClient.resolveTokenAccounts(
-      appHotWallet.publicKey()
-    );
+    appTokenAccounts = await newKineticClient.getTokenAccounts({
+      account: appHotWallet.publicKey,
+    });
+    console.log('🚀 ~ appTokenAccounts', appTokenAccounts);
 
-    kinClient = newKinClient;
-    kinClientEnv = env === Environment.Prod ? 'Prod' : 'Test';
+    kinClient = newKineticClient;
+    console.log('🚀 ~ kinClient', kinClient.sdkConfig);
 
     res.sendStatus(200);
   } catch (error) {
@@ -156,20 +165,25 @@ app.post('/setup', (req, res) => {
 async function createKinAccount({ req, res }: AsyncRequest) {
   const name = req.query.name;
   console.log('🚀 ~ createKinAccount', name);
+
   try {
     if (typeof name === 'string') {
-      const privateKey = PrivateKey.random();
+      const mnemonic = Keypair.generateMnemonic();
+      const keypair = Keypair.fromMnemonic(mnemonic);
 
-      // Creates a Solana Account and a Kin Token Account for Receving Kin
-      await kinClient.createAccount(privateKey);
+      await kinClient.createAccount({
+        owner: keypair,
+        commitment: Commitment.Confirmed,
+      });
 
       // Resolve Token Account
       // Array of Public Keys in case there are multiple Token Accounts
-      const kinTokenAccounts = await kinClient.resolveTokenAccounts(
-        privateKey.publicKey()
-      );
+      const kinTokenAccounts = await kinClient.getTokenAccounts({
+        account: keypair.publicKey,
+      });
+      console.log('🚀 ~ kinTokenAccounts', kinTokenAccounts);
 
-      saveKinAccount({ name, privateKey, kinTokenAccounts });
+      saveKinAccount({ name, keypair, kinTokenAccounts });
       res.sendStatus(201);
     } else {
       throw new Error('No valid name');
@@ -196,20 +210,22 @@ async function getBalance({ req, res }: AsyncRequest) {
     if (typeof user === 'string') {
       let publicKey; // use for first attempt
 
-      if (users[kinClientEnv][user]) {
-        const { publicKey: pk } = users[kinClientEnv][user];
+      if (users[kinClientEnv()][user]) {
+        const { publicKey: pk } = users[kinClientEnv()][user];
         publicKey = pk;
       } else {
-        publicKey = appHotWallet.publicKey();
+        publicKey = appHotWallet.publicKey;
       }
       console.log('🚀 ~ publicKey', publicKey);
-      const balance = await kinClient.getBalance(publicKey);
+      const { balance } = await kinClient.getBalance({
+        account: publicKey,
+      });
       console.log('🚀 ~ balance', balance);
 
-      const balanceInKin = quarksToKin(balance);
+      const balanceInKin = Number(balance) / 100000;
       console.log('🚀 ~ balanceInKin', balanceInKin);
 
-      res.send(balanceInKin);
+      res.send(balanceInKin.toString());
     } else {
       throw new Error('No valid user');
     }
@@ -235,46 +251,32 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
 
   if (typeof to === 'string' && typeof amount === 'string') {
     let publicKey;
-    let tokenAccount;
 
-    if (users[kinClientEnv][to]) {
-      const { publicKey: pk, kinTokenAccounts } = users[kinClientEnv][to];
+    if (users[kinClientEnv()][to]) {
+      const { publicKey: pk } = users[kinClientEnv()][to];
       publicKey = pk;
-      tokenAccount = kinTokenAccounts[0];
     } else {
-      publicKey = appHotWallet.publicKey();
-      tokenAccount = appTokenAccounts[0];
+      publicKey = appHotWallet.publicKey;
     }
 
-    const quarks = kinToQuarks(amount);
-
-    // Try to airdrop to publicKey
     try {
-      const buffer = await kinClient.requestAirdrop(publicKey, quarks);
-      console.log('🚀 ~ airdrop successful to publicKey', to, amount);
-      const transactionId = bs58.encode(buffer);
-      saveKinTransaction({ transactionId });
+      const airdrop = await kinClient.requestAirdrop({
+        account: publicKey,
+        amount: amount,
+      });
+      console.log('🚀 ~ airdrop', airdrop);
+
+      saveKinTransaction({ transactionId: airdrop.signature });
       res.sendStatus(200);
     } catch (error) {
-      console.log('🚀 ~ error airdrop to publicKey failed', error);
-      // If publicKey fails, try again to tokenAccount. This might be a bug. It should work withe the publicKey
-      try {
-        const buffer = await kinClient.requestAirdrop(tokenAccount, quarks);
-        console.log('🚀 ~ airdrop successful to tokenAccount', to, amount);
-        const transactionId = bs58.encode(buffer);
-        console.log('🚀 ~ transactionId', transactionId);
-        saveKinTransaction({ transactionId });
-        res.sendStatus(200);
-      } catch (err) {
-        console.log(
-          '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-        );
-        console.log(
-          '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-        );
-        console.log('🚀 ~ err', err);
-        res.sendStatus(400);
-      }
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
     }
   }
 }
@@ -291,34 +293,36 @@ async function getTransaction({ req, res }: AsyncRequest) {
   console.log('🚀 ~ getTransaction', transaction);
   if (typeof transaction === 'string') {
     try {
-      const transactionBuffer = bs58.decode(transaction);
-      const { txId, txState, payments } = await kinClient.getTransaction(
-        transactionBuffer
-      );
+      throw new Error('getTransaction not implemented yet!!!');
 
-      if (txState === 0) throw new Error("Can't find transaction");
+      // const transactionBuffer = bs58.decode(transaction);
+      // const { txId, txState, payments } = await kinClient.getTransaction(
+      //   transactionBuffer
+      // );
 
-      console.log('🚀 ~ Got Transaction!');
-      console.log('🚀 ~ txId', bs58.encode(txId));
+      // if (txState === 0) throw new Error("Can't find transaction");
 
-      let decodedPayments;
-      if (payments?.length > 0) {
-        decodedPayments = payments.map(
-          ({ sender, destination, quarks, type, memo }) => {
-            const paymentObject = {
-              type,
-              quarks,
-              sender: sender.toBase58(),
-              destination: destination.toBase58(),
-              memo,
-            };
+      // console.log('🚀 ~ Got Transaction!');
+      // console.log('🚀 ~ txId', bs58.encode(txId));
 
-            return paymentObject;
-          }
-        );
-        console.log('🚀 ~ decodedPayments', decodedPayments);
-      }
-      res.send(JSON.stringify({ txState, payments: decodedPayments || [] }));
+      // let decodedPayments;
+      // if (payments?.length > 0) {
+      //   decodedPayments = payments.map(
+      //     ({ sender, destination, quarks, type, memo }) => {
+      //       const paymentObject = {
+      //         type,
+      //         quarks,
+      //         sender: sender.toBase58(),
+      //         destination: destination.toBase58(),
+      //         memo,
+      //       };
+
+      //       return paymentObject;
+      //     }
+      //   );
+      //   console.log('🚀 ~ decodedPayments', decodedPayments);
+      // }
+      // res.send(JSON.stringify({ txState, payments: decodedPayments || [] }));
     } catch (error) {
       console.log(
         '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -361,36 +365,49 @@ async function submitPayment({ req, res }: AsyncRequest) {
   if (typeof from === 'string' && typeof to === 'string') {
     try {
       let sender;
-      if (users[kinClientEnv][from]) {
-        const { privateKey } = users[kinClientEnv][from];
-        sender = privateKey;
+      if (users[kinClientEnv()][from]) {
+        sender = users[kinClientEnv()][from];
       } else {
         sender = appHotWallet;
       }
 
       let destination;
-      if (users[kinClientEnv][to]) {
-        const { publicKey } = users[kinClientEnv][to];
+      if (users[kinClientEnv()][to]) {
+        const { publicKey } = users[kinClientEnv()][to];
         destination = publicKey;
       } else {
         destination = appHotWallet.publicKey();
       }
 
-      const quarks = kinToQuarks(amount);
+      // const quarks = kinToQuarks(amount);
       const typeEnum = getTypeEnum(type);
 
-      const paymentObject: Payment = {
-        sender,
+      const transactionOptions = {
+        amount,
         destination,
-        quarks,
+        owner: sender,
         type: typeEnum,
+        commitment: Commitment.Confirmed,
       };
+      console.log('🚀 ~ transactionOptions', transactionOptions);
 
-      const buffer = await kinClient.submitPayment(paymentObject);
-      const transactionId = bs58.encode(buffer);
-      saveKinTransaction({ transactionId });
+      const transaction = await kinClient.makeTransfer(transactionOptions);
+      console.log('🚀 ~ transaction', transaction);
 
-      console.log('🚀 ~ payment successful', from, to, amount, type);
+      if (transaction.errors.length) {
+        throw new Error(transaction.errors[0].message);
+      }
+
+      saveKinTransaction({ transactionId: transaction.signature });
+
+      console.log(
+        '🚀 ~ payment successful',
+        from,
+        to,
+        amount,
+        type,
+        transaction.signature
+      );
       res.sendStatus(200);
     } catch (error) {
       console.log(
@@ -419,37 +436,49 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
   if (typeof from === 'string') {
     try {
       let sender;
-      if (users[kinClientEnv][from]) {
-        const { privateKey } = users[kinClientEnv][from];
-        sender = privateKey;
+      if (users[kinClientEnv()][from]) {
+        sender = users[kinClientEnv()][from];
       } else {
         sender = appHotWallet;
       }
 
-      const earns: Earn[] = batch.map((earn) => {
+      const destinations = batch.map((earn) => {
         let destination;
-        if (users[kinClientEnv][earn.to]) {
-          const { publicKey } = users[kinClientEnv][earn.to];
+        if (users[kinClientEnv()][earn.to]) {
+          const { publicKey } = users[kinClientEnv()][earn.to];
           destination = publicKey;
         } else {
           throw new Error("Can't find user to send to!");
         }
 
-        return {
+        const newTransaction: TransferDestination = {
+          amount: earn.amount,
           destination,
-          quarks: kinToQuarks(earn.amount),
         };
+
+        return newTransaction;
       });
 
-      const { txId } = await kinClient.submitEarnBatch({
-        sender,
-        earns,
-      });
+      const batchOptions: MakeTransferBatchOptions = {
+        commitment: Commitment.Confirmed,
+        owner: sender,
+        type: TransactionType.P2P,
+        destinations,
+      };
 
-      const transactionId = bs58.encode(txId);
-      saveKinTransaction({ transactionId });
+      const transaction = await kinClient.makeTransferBatch(batchOptions);
+      console.log('🚀 ~ transaction', transaction);
 
-      console.log('🚀 ~ earn batch payment successful: ', transactionId);
+      if (transaction.errors.length) {
+        throw new Error(transaction.errors[0].message);
+      }
+
+      saveKinTransaction({ transactionId: transaction.signature });
+
+      console.log(
+        '🚀 ~ earn batch payment successful: ',
+        transaction.signature
+      );
       res.sendStatus(200);
     } catch (error) {
       console.log(
@@ -479,49 +508,49 @@ app.post('/earn_batch', async (req, res) => {
 // You could also use ngrok
 // https://ngrok.com/
 
-app.use(
-  '/events',
-  EventsHandler((events: Event[]) => {
-    console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-    console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-    console.log('🚀 ~ /events', events);
+// app.use(
+//   '/events',
+//   EventsHandler((events: Event[]) => {
+//     console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+//     console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+//     console.log('🚀 ~ /events', events);
 
-    // TODO use these events to trigger actions in your App if required
-  }, process.env.SERVER_WEBHOOK_SECRET)
-);
+//     // TODO use these events to trigger actions in your App if required
+//   }, process.env.SERVER_WEBHOOK_SECRET)
+// );
 
-app.use(
-  '/sign_transaction',
-  SignTransactionHandler(
-    Environment.Test,
-    (req: SignTransactionRequest, resp: SignTransactionResponse) => {
-      console.log(
-        '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-      );
-      console.log(
-        '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-      );
-      console.log('🚀 ~ /sign_transaction', req);
+// app.use(
+//   '/sign_transaction',
+//   SignTransactionHandler(
+//     Environment.Test,
+//     (req: SignTransactionRequest, resp: SignTransactionResponse) => {
+//       console.log(
+//         '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+//       );
+//       console.log(
+//         '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+//       );
+//       console.log('🚀 ~ /sign_transaction', req);
 
-      function checkIsValid() {
-        // IMPORTANT!
-        // Implement transaction approval here!
-        // This webhook will approve all incoming transactions
-        return true;
-      }
+//       function checkIsValid() {
+//         // IMPORTANT!
+//         // Implement transaction approval here!
+//         // This webhook will approve all incoming transactions
+//         return true;
+//       }
 
-      const isValid = checkIsValid();
-      console.log('🚀 ~ isValid', isValid);
+//       const isValid = checkIsValid();
+//       console.log('🚀 ~ isValid', isValid);
 
-      if (isValid) {
-        resp.sign(appHotWallet);
-      } else {
-        resp.reject();
-      }
-    },
-    process.env.SERVER_WEBHOOK_SECRET
-  )
-);
+//       if (isValid) {
+//         resp.sign(appHotWallet);
+//       } else {
+//         resp.reject();
+//       }
+//     },
+//     process.env.SERVER_WEBHOOK_SECRET
+//   )
+// );
 
 // catch 404 and forward to error handler
 app.use(function (req, res) {
@@ -534,7 +563,7 @@ app.listen(port, () => {
     console.log(
       `Kin Node SDK App
 App Index ${process.env.APP_INDEX}
-Public Key ${appHotWallet.publicKey().toBase58()}
+Public Key ${appHotWallet.publicKey}
 Listening at http://localhost:${port}`
     );
   } catch (error) {
