@@ -10,10 +10,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "engines": {
-    "npm": "6",
-    "node": "12"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -29,6 +25,7 @@
     "typescript": "3.9.5"
   },
   "dependencies": {
+    "@kin-kinetic/sdk": "^1.0.0-beta.10",
     "@kinecosystem/kin-sdk-v2": "^0.6.0",
     "bs58": "^4.0.1",
     "cors": "^2.8.5",
