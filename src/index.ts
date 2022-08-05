@@ -104,17 +104,18 @@ interface AsyncRequest {
   res: Response;
 }
 async function setUpKinClient({ req, res }: AsyncRequest) {
-  const env = req.query.env === 'Mainnet' ? 'mainnet' : 'devnet';
+  const environment = req.query.env === 'Mainnet' ? 'mainnet' : 'devnet';
+  console.log('🚀 ~ environment', environment);
 
   try {
-    const appIndex = Number(process.env.APP_INDEX);
-    console.log('🚀 ~ appIndex', appIndex);
+    const index = Number(process.env.APP_INDEX);
+    console.log('🚀 ~ index', index);
 
-    if (!appIndex) throw new Error('No App Index');
+    if (!index) throw new Error('No App Index');
 
     const config: KineticSdkConfig = {
-      environment: 'devnet',
-      index: 1,
+      environment,
+      index,
     };
 
     if (process.env.KINETIC_LOCAL_API) {
@@ -508,49 +509,31 @@ app.post('/earn_batch', async (req, res) => {
 // You could also use ngrok
 // https://ngrok.com/
 
-// app.use(
-//   '/events',
-//   EventsHandler((events: Event[]) => {
-//     console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-//     console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-//     console.log('🚀 ~ /events', events);
+app.use('/events', async (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /events');
+  console.log('🚀 ~ req.body', req.body);
 
-//     // TODO use these events to trigger actions in your App if required
-//   }, process.env.SERVER_WEBHOOK_SECRET)
-// );
+  res.sendStatus(200);
+});
 
-// app.use(
-//   '/sign_transaction',
-//   SignTransactionHandler(
-//     Environment.Test,
-//     (req: SignTransactionRequest, resp: SignTransactionResponse) => {
-//       console.log(
-//         '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-//       );
-//       console.log(
-//         '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-//       );
-//       console.log('🚀 ~ /sign_transaction', req);
+app.use('/verify', async (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /verify');
+  console.log('🚀 ~ req.body', req.body);
 
-//       function checkIsValid() {
-//         // IMPORTANT!
-//         // Implement transaction approval here!
-//         // This webhook will approve all incoming transactions
-//         return true;
-//       }
+  // TODO
+  // Do stuff to verify the transaction
+  const verified = true;
 
-//       const isValid = checkIsValid();
-//       console.log('🚀 ~ isValid', isValid);
-
-//       if (isValid) {
-//         resp.sign(appHotWallet);
-//       } else {
-//         resp.reject();
-//       }
-//     },
-//     process.env.SERVER_WEBHOOK_SECRET
-//   )
-// );
+  if (verified) {
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(400);
+  }
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res) {
