@@ -7,6 +7,7 @@ import {
   KineticSdk,
   KineticSdkConfig,
   MakeTransferBatchOptions,
+  MakeTransferOptions,
   TransferDestination,
 } from '@kin-kinetic/sdk';
 import { Keypair } from '@kin-kinetic/keypair';
@@ -21,22 +22,23 @@ app.use(cors());
 app.use(express.json());
 
 // Set up Kin client
-let kinClient;
+let kineticClient;
 let appHotWallet;
-let appTokenAccounts = [];
 try {
   // if deprecated Stellar keypair:
   // appHotWallet = KeypairCompat.getKeypair(process.env.PRIVATE_KEY);
 
   // if Solana Keypair:
   // appHotWallet = Keypair.fromSecretKey(process.env.PRIVATE_KEY);
-  appHotWallet = Keypair.fromMnemonic(process.env.MNEMONIC);
+  // appHotWallet = Keypair.fromMnemonic(process.env.MNEMONIC);
+  appHotWallet = Keypair.fromByteArray(JSON.parse(process.env.BYTE_ARRAY));
 } catch (error) {
   console.log('🚀 ~ error', error);
   console.log('🚀 ~ It looks like your PRIVATE_KEY is missing or invalid.');
 }
 
-const kinClientEnv = () => kinClient?.sdkConfig?.environment || 'devnet';
+const kineticClientEnv = () =>
+  kineticClient?.sdkConfig?.environment || 'devnet';
 
 interface User {
   privateKey: string;
@@ -56,7 +58,7 @@ interface SaveKinAccount {
 function saveKinAccount({ name, keypair, kinTokenAccounts }: SaveKinAccount) {
   // %%%%%%%%%%%% IMPORTANT %%%%%%%%%%%%
   // TODO - Save your account data securely
-  users[kinClientEnv()][name] = {
+  users[kineticClientEnv()][name] = {
     keypair,
     publicKey: keypair.publicKey,
     kinTokenAccounts,
@@ -79,18 +81,21 @@ function saveKinTransaction({ transactionId }: SaveKinTransaction) {
 app.get('/status', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /status', kinClient?.sdkConfig.index || 'Not Instantiated');
+  console.log(
+    '🚀 ~ /status',
+    kineticClient?.sdkConfig.index || 'Not Instantiated'
+  );
   res.send(
     JSON.stringify({
-      appIndex: kinClient ? kinClient.sdkConfig.index : null,
-      env: kinClient ? kinClient.sdkConfig.environment : null,
+      appIndex: kineticClient ? kineticClient.sdkConfig.index : null,
+      env: kineticClient ? kineticClient.sdkConfig.environment : null,
       users: [
         { name: 'App', publicKey: appHotWallet.publicKey },
-        ...Object.keys(users[kinClientEnv()]).map(
+        ...Object.keys(users[kineticClientEnv()]).map(
           (user) =>
             user && {
               name: user,
-              publicKey: users[kinClientEnv()][user].publicKey,
+              publicKey: users[kineticClientEnv()][user].publicKey,
             }
         ),
       ],
@@ -103,7 +108,7 @@ interface AsyncRequest {
   req: Request;
   res: Response;
 }
-async function setUpKinClient({ req, res }: AsyncRequest) {
+async function setUpKineticClient({ req, res }: AsyncRequest) {
   const environment = req.query.env === 'Mainnet' ? 'mainnet' : 'devnet';
   console.log('🚀 ~ environment', environment);
 
@@ -118,11 +123,13 @@ async function setUpKinClient({ req, res }: AsyncRequest) {
       index,
     };
 
-    if (process.env.KINETIC_LOCAL_API) {
-      config.endpoint = process.env.KINETIC_LOCAL_API;
+    if (process.env.KINETIC_ENDPOINT) {
+      config.endpoint = process.env.KINETIC_ENDPOINT;
     }
 
+    console.log('🚀 ~ config', config);
     const newKineticClient = await KineticSdk.setup(config);
+    console.log('🚀 ~ newKineticClient', newKineticClient);
 
     // test App Hot Wallet exists
     try {
@@ -132,20 +139,18 @@ async function setUpKinClient({ req, res }: AsyncRequest) {
       console.log('🚀 ~ App balance', balance);
     } catch (error) {
       // if not, create the account
-      await newKineticClient.createAccount(appHotWallet);
+      await newKineticClient.createAccount({
+        commitment: Commitment.Confirmed,
+        owner: appHotWallet,
+      });
       const balance = await newKineticClient.getBalance({
         account: appHotWallet.publicKey,
       });
       console.log('🚀 ~ App balance', balance);
     }
 
-    appTokenAccounts = await newKineticClient.getTokenAccounts({
-      account: appHotWallet.publicKey,
-    });
-    console.log('🚀 ~ appTokenAccounts', appTokenAccounts);
-
-    kinClient = newKineticClient;
-    console.log('🚀 ~ kinClient', kinClient.sdkConfig);
+    kineticClient = newKineticClient;
+    console.log('🚀 ~ kineticClient', kineticClient.sdkConfig);
 
     res.sendStatus(200);
   } catch (error) {
@@ -160,7 +165,7 @@ app.post('/setup', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /setup');
-  setUpKinClient({ req, res });
+  setUpKineticClient({ req, res });
 });
 
 async function createKinAccount({ req, res }: AsyncRequest) {
@@ -170,16 +175,19 @@ async function createKinAccount({ req, res }: AsyncRequest) {
   try {
     if (typeof name === 'string') {
       const mnemonic = Keypair.generateMnemonic();
+      console.log('🚀 ~ mnemonic', mnemonic);
       const keypair = Keypair.fromMnemonic(mnemonic);
+      console.log('🚀 ~ keypair', keypair);
 
-      await kinClient.createAccount({
+      const create = await kineticClient.createAccount({
         owner: keypair,
         commitment: Commitment.Confirmed,
       });
+      console.log('🚀 ~ create', create);
 
       // Resolve Token Account
       // Array of Public Keys in case there are multiple Token Accounts
-      const kinTokenAccounts = await kinClient.getTokenAccounts({
+      const kinTokenAccounts = await kineticClient.getTokenAccounts({
         account: keypair.publicKey,
       });
       console.log('🚀 ~ kinTokenAccounts', kinTokenAccounts);
@@ -211,14 +219,14 @@ async function getBalance({ req, res }: AsyncRequest) {
     if (typeof user === 'string') {
       let publicKey; // use for first attempt
 
-      if (users[kinClientEnv()][user]) {
-        const { publicKey: pk } = users[kinClientEnv()][user];
+      if (users[kineticClientEnv()][user]) {
+        const { publicKey: pk } = users[kineticClientEnv()][user];
         publicKey = pk;
       } else {
         publicKey = appHotWallet.publicKey;
       }
       console.log('🚀 ~ publicKey', publicKey);
-      const { balance } = await kinClient.getBalance({
+      const { balance } = await kineticClient.getBalance({
         account: publicKey,
       });
       console.log('🚀 ~ balance', balance);
@@ -253,15 +261,15 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
   if (typeof to === 'string' && typeof amount === 'string') {
     let publicKey;
 
-    if (users[kinClientEnv()][to]) {
-      const { publicKey: pk } = users[kinClientEnv()][to];
+    if (users[kineticClientEnv()][to]) {
+      const { publicKey: pk } = users[kineticClientEnv()][to];
       publicKey = pk;
     } else {
       publicKey = appHotWallet.publicKey;
     }
 
     try {
-      const airdrop = await kinClient.requestAirdrop({
+      const airdrop = await kineticClient.requestAirdrop({
         account: publicKey,
         amount: amount,
       });
@@ -297,7 +305,7 @@ async function getTransaction({ req, res }: AsyncRequest) {
       throw new Error('getTransaction not implemented yet!!!');
 
       // const transactionBuffer = bs58.decode(transaction);
-      // const { txId, txState, payments } = await kinClient.getTransaction(
+      // const { txId, txState, payments } = await kineticClient.getTransaction(
       //   transactionBuffer
       // );
 
@@ -366,33 +374,35 @@ async function submitPayment({ req, res }: AsyncRequest) {
   if (typeof from === 'string' && typeof to === 'string') {
     try {
       let sender;
-      if (users[kinClientEnv()][from]) {
-        sender = users[kinClientEnv()][from];
+      if (users[kineticClientEnv()][from]) {
+        const { keypair } = users[kineticClientEnv()][from];
+        sender = keypair;
       } else {
         sender = appHotWallet;
+        console.log('🚀 ~ sender', sender);
       }
 
       let destination;
-      if (users[kinClientEnv()][to]) {
-        const { publicKey } = users[kinClientEnv()][to];
+      if (users[kineticClientEnv()][to]) {
+        const { publicKey } = users[kineticClientEnv()][to];
         destination = publicKey;
       } else {
-        destination = appHotWallet.publicKey();
+        destination = appHotWallet.publicKey;
       }
 
       // const quarks = kinToQuarks(amount);
-      const typeEnum = getTypeEnum(type);
+      // const typeEnum = getTypeEnum(type);
 
-      const transactionOptions = {
+      const transactionOptions: MakeTransferOptions = {
         amount,
         destination,
         owner: sender,
-        type: typeEnum,
-        commitment: Commitment.Confirmed,
+        // type: typeEnum,
+        // commitment: Commitment.Confirmed,
       };
       console.log('🚀 ~ transactionOptions', transactionOptions);
 
-      const transaction = await kinClient.makeTransfer(transactionOptions);
+      const transaction = await kineticClient.makeTransfer(transactionOptions);
       console.log('🚀 ~ transaction', transaction);
 
       if (transaction.errors.length) {
@@ -437,16 +447,16 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
   if (typeof from === 'string') {
     try {
       let sender;
-      if (users[kinClientEnv()][from]) {
-        sender = users[kinClientEnv()][from];
+      if (users[kineticClientEnv()][from]) {
+        sender = users[kineticClientEnv()][from];
       } else {
         sender = appHotWallet;
       }
 
       const destinations = batch.map((earn) => {
         let destination;
-        if (users[kinClientEnv()][earn.to]) {
-          const { publicKey } = users[kinClientEnv()][earn.to];
+        if (users[kineticClientEnv()][earn.to]) {
+          const { publicKey } = users[kineticClientEnv()][earn.to];
           destination = publicKey;
         } else {
           throw new Error("Can't find user to send to!");
@@ -463,11 +473,11 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
       const batchOptions: MakeTransferBatchOptions = {
         commitment: Commitment.Confirmed,
         owner: sender,
-        type: TransactionType.P2P,
+        type: TransactionType.Earn,
         destinations,
       };
 
-      const transaction = await kinClient.makeTransferBatch(batchOptions);
+      const transaction = await kineticClient.makeTransferBatch(batchOptions);
       console.log('🚀 ~ transaction', transaction);
 
       if (transaction.errors.length) {
@@ -526,9 +536,17 @@ app.use('/verify', async (req, res) => {
 
   // TODO
   // Do stuff to verify the transaction
-  const verified = true;
 
-  if (verified) {
+  // always verify
+  // const verified = true;
+  // if (verified) {
+  //   res.sendStatus(200);
+  // } else {
+  //   res.sendStatus(400);
+  // }
+
+  // alternate verify
+  if (Math.random() < 0.5) {
     res.sendStatus(200);
   } else {
     res.sendStatus(400);
