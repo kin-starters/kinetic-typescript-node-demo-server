@@ -13,6 +13,7 @@ import {
   quarksToKin,
   TransactionType,
   PublicKey,
+  Memo,
 } from '@kinecosystem/kin-sdk-v2';
 
 import {
@@ -379,11 +380,25 @@ async function submitPayment({ req, res }: AsyncRequest) {
       const quarks = kinToQuarks(amount);
       const typeEnum = getTypeEnum(type);
 
+      // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      const string = 'Str must be 29 chars or less.';
+      let foreignKey = Buffer.alloc(29);
+      if (string) {
+        foreignKey = Buffer.from(string);
+      }
+      console.log('🚀 ~ foreignKey length', foreignKey.toString().length);
+
+      const memo = Memo.new(1, typeEnum, 360, foreignKey).buffer.toString(
+        'base64'
+      );
+      // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
       const paymentObject: Payment = {
         sender,
         destination,
         quarks,
         type: typeEnum,
+        memo,
       };
 
       const buffer = await kinClient.submitPayment(paymentObject);
