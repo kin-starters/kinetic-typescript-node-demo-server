@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-// import bs58 from 'bs58';
 
 import {
   KineticSdk,
@@ -31,6 +30,7 @@ try {
   // if Solana Keypair:
   // appHotWallet = Keypair.fromSecretKey(process.env.PRIVATE_KEY);
   // appHotWallet = Keypair.fromMnemonic(process.env.MNEMONIC);
+
   appHotWallet = Keypair.fromByteArray(JSON.parse(process.env.BYTE_ARRAY));
 } catch (error) {
   console.log('🚀 ~ error', error);
@@ -112,6 +112,11 @@ async function setUpKineticClient({ req, res }: AsyncRequest) {
   const environment = req.query.env === 'Mainnet' ? 'mainnet' : 'devnet';
   console.log('🚀 ~ environment', environment);
 
+  const endpoint =
+    req.query.env === 'Mainnet'
+      ? process.env.MAINNET_KINETIC_ENDPOINT
+      : process.env.DEVNET_KINETIC_ENDPOINT || 'https://sandbox.kinetic.host/';
+
   try {
     const index = Number(process.env.APP_INDEX);
     console.log('🚀 ~ index', index);
@@ -120,12 +125,9 @@ async function setUpKineticClient({ req, res }: AsyncRequest) {
 
     const config: KineticSdkConfig = {
       environment,
+      endpoint,
       index,
     };
-
-    if (process.env.KINETIC_ENDPOINT) {
-      config.endpoint = process.env.KINETIC_ENDPOINT;
-    }
 
     console.log('🚀 ~ config', config);
     const newKineticClient = await KineticSdk.setup(config);
@@ -140,7 +142,7 @@ async function setUpKineticClient({ req, res }: AsyncRequest) {
     } catch (error) {
       // if not, create the account
       await newKineticClient.createAccount({
-        commitment: Commitment.Confirmed,
+        commitment: Commitment.Finalized,
         owner: appHotWallet,
       });
       const balance = await newKineticClient.getBalance({
@@ -179,19 +181,21 @@ async function createKinAccount({ req, res }: AsyncRequest) {
       const keypair = Keypair.fromMnemonic(mnemonic);
       console.log('🚀 ~ keypair', keypair);
 
-      const create = await kineticClient.createAccount({
+      const account = await kineticClient.createAccount({
         owner: keypair,
-        commitment: Commitment.Confirmed,
+        commitment: Commitment.Finalized,
       });
-      console.log('🚀 ~ create', create);
+      console.log('🚀 ~ account', account);
 
       // Resolve Token Account
       // Array of Public Keys in case there are multiple Token Accounts
       const kinTokenAccounts = await kineticClient.getTokenAccounts({
         account: keypair.publicKey,
       });
+
       console.log('🚀 ~ kinTokenAccounts', kinTokenAccounts);
 
+      saveKinTransaction({ transactionId: account.signature });
       saveKinAccount({ name, keypair, kinTokenAccounts });
       res.sendStatus(201);
     } else {
@@ -272,6 +276,7 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
       const airdrop = await kineticClient.requestAirdrop({
         account: publicKey,
         amount: amount,
+        commitment: Commitment.Finalized,
       });
       console.log('🚀 ~ airdrop', airdrop);
 
@@ -298,40 +303,15 @@ app.post('/airdrop', (req, res) => {
 });
 
 async function getTransaction({ req, res }: AsyncRequest) {
-  const transaction = req?.query?.transaction_id || '';
-  console.log('🚀 ~ getTransaction', transaction);
-  if (typeof transaction === 'string') {
+  const signature = req?.query?.transaction_id || '';
+  console.log('🚀 ~ getTransaction', signature);
+  if (typeof signature === 'string') {
     try {
-      throw new Error('getTransaction not implemented yet!!!');
-
-      // const transactionBuffer = bs58.decode(transaction);
-      // const { txId, txState, payments } = await kineticClient.getTransaction(
-      //   transactionBuffer
-      // );
-
-      // if (txState === 0) throw new Error("Can't find transaction");
-
-      // console.log('🚀 ~ Got Transaction!');
-      // console.log('🚀 ~ txId', bs58.encode(txId));
-
-      // let decodedPayments;
-      // if (payments?.length > 0) {
-      //   decodedPayments = payments.map(
-      //     ({ sender, destination, quarks, type, memo }) => {
-      //       const paymentObject = {
-      //         type,
-      //         quarks,
-      //         sender: sender.toBase58(),
-      //         destination: destination.toBase58(),
-      //         memo,
-      //       };
-
-      //       return paymentObject;
-      //     }
-      //   );
-      //   console.log('🚀 ~ decodedPayments', decodedPayments);
-      // }
-      // res.send(JSON.stringify({ txState, payments: decodedPayments || [] }));
+      const transaction = await kineticClient.getTransaction({
+        signature,
+      });
+      console.log('🚀 ~ transaction', transaction);
+      res.send(JSON.stringify(transaction));
     } catch (error) {
       console.log(
         '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -350,6 +330,46 @@ app.get('/transaction', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /transaction');
   getTransaction({ req, res });
+});
+
+async function getHistory({ req, res }: AsyncRequest) {
+  const user = req?.query?.user || '';
+  console.log('🚀 ~ getHistory', user);
+  if (typeof user === 'string') {
+    try {
+      let publicKey;
+
+      if (users[kineticClientEnv()][user]) {
+        const { publicKey: pk } = users[kineticClientEnv()][user];
+        publicKey = pk;
+      } else {
+        publicKey = appHotWallet.publicKey;
+      }
+      console.log('🚀 ~ publicKey', publicKey);
+      const history = await kineticClient.getHistory({
+        account: publicKey,
+      });
+      console.log('🚀 ~ history', history);
+
+      res.send(JSON.stringify(history));
+    } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
+app.get('/history', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /transaction');
+  getHistory({ req, res });
 });
 
 function getTypeEnum(type) {
@@ -390,15 +410,14 @@ async function submitPayment({ req, res }: AsyncRequest) {
         destination = appHotWallet.publicKey;
       }
 
-      // const quarks = kinToQuarks(amount);
-      // const typeEnum = getTypeEnum(type);
+      const typeEnum = getTypeEnum(type);
 
       const transactionOptions: MakeTransferOptions = {
         amount,
         destination,
         owner: sender,
-        // type: typeEnum,
-        // commitment: Commitment.Confirmed,
+        type: typeEnum,
+        commitment: Commitment.Finalized,
       };
       console.log('🚀 ~ transactionOptions', transactionOptions);
 
@@ -471,7 +490,7 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
       });
 
       const batchOptions: MakeTransferBatchOptions = {
-        commitment: Commitment.Confirmed,
+        commitment: Commitment.Finalized,
         owner: sender,
         type: TransactionType.Earn,
         destinations,
