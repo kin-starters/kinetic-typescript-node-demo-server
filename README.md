@@ -1,7 +1,7 @@
-# Kin Node SDK Demo
+# Kinetic Typescript SDK Demo
 
 
-## This app demonstrates how to integrate with [Kin](https://developer.kin.org/) via the [Node SDK](https://github.com/kinecosystem/kin-node)
+## This app demonstrates how to integrate with [Kin](https://developer.kin.org/) via the [TypeScript SDK](https://developer.kin.org/developers/typescript)
 
 
 
@@ -11,17 +11,22 @@ This Kin BE Demo Server is compatible with our [Kin DApp Playground](https://git
 ## Prep
 - Your App is registered on the [Kin Developer Portal](https://portal.kin.org/) so you can take advantage of the [Kin Rewards Engine](https://developer.kin.org/docs/the-kre-explained/) and get your App Index
 - Environment variable for your App Index
-- Environment variable for your Private Key. Visit [The Kin Laboratory](https://laboratory.kin.org/home) if you want help getting started with Keypairs for testing
-- Environment variable for your Webhook Secret (if using webhooks)
+- Environment variable for your Keypair. Can be either `MNEMONIC` or `BYTE_ARRAY`. 
+- Don't have a Keypair? 
+    - Use the [Kinetic DApp Demo](https://github.com/kin-starters/kin-dapp-kinetic) to quickly generate a devnet Keypair and get your mnemonic phrase.
+    - Or run [Kinetic](https://developer.kin.org/docs/developers/kinetic-deployment#running-kinetic-locally) locally to do the same.
 
 `.env`
 
 ```
-APP_INDEX=Your App App Index
-PRIVATE_KEY=Your App Account Secret Key
-SERVER_WEBHOOK_SECRET=Your Webhook Secret
+PORT=3001
+APP_INDEX=999
+KINETIC_ENDPOINT='https://your_kinetic_endpoint'
+BYTE_ARRAY=[24,20,238,188,26,234,120,209,88,63,170,46,66,98,21,113,194,120,143,228,231,37,91,0,242,32,180,99,243,179,57,144,11,233,235,235,203,20,105,33,47,140,152,253,12,148,72,175,141,253,242,110,225,110,21,211,118,87,99,99,99,99,99,99]
+MNEMONIC="cat dog elephant lion tiger shark whale diplodocus dragon pokemon transformer turtle"
+
 ```
-## Install Packages - Make sure you're using Node 12
+## Install Packages
 
 ```
 npm i
@@ -51,7 +56,7 @@ GET /status
 Response:
 200 {
     "appIndex": 360,
-    "env": 1,
+    "env": 'devnet',
     "transactions": [],
     "users": [
         {
@@ -123,23 +128,22 @@ Response
 Response
 200 or 400
 ```
-### Transaction Info
+### Transaction Details
  ```
  GET /transaction?transaction_id=uxMepF4pYrexvFKJEsU2ATzxU1MSJkqx51DCEek5SszAPygRUgsFYT8Ai6yJYLyKBJuqTd4sBnsC9wDWpCFWXi4
 
 
 Response
-200 {
-    "payments": [
-        {
-            "destination": "GTpeCtraqEzkbSChQCmakFqyHpNU3iensTWnX58yQrk6",
-            "quarks": 100000000,
-            "sender": "89CLzhYJzZKs8mZ3GkwPeJfb3wHVJqGunyryBNjJhiDH",
-            "type": 1
-        }
-    ],
-    "txState": 3
-} 
+200 and return string of transaction data 
+or 400
+```
+### Account History
+ ```
+ GET /history?user=Test%20User
+
+
+Response
+200 and return string of transaction data 
 or 400
 ```
 ## Webhooks Local Development
@@ -151,9 +155,7 @@ lt --port 3001 --subdomain <webhook domain stored in the developer portal for th
 
 You could also use ngrok: https://ngrok.com/
 
-## If you're just getting started, you might want to look at [this](https://developer.kin.org/tutorials/#getting-started) first...
+## If you're just getting started, you might want to look at [this](https://developer.kin.org/docs/developers) first...
 
 ## Dev Community
 Join us on [Discord](https://discord.com/invite/kdRyUNmHDn) if you're looking for support with your App or to connect with other active Kin developers.
-
-If you're stuck or have any questions you'd like answering, get in touch on our [kin-node](https://discord.com/channels/808859554997469244/811117045742960640) channel.

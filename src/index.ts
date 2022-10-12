@@ -27,10 +27,8 @@ try {
   // if deprecated Stellar keypair:
   // appHotWallet = KeypairCompat.getKeypair(process.env.PRIVATE_KEY);
 
-  // if Solana Keypair:
-  // appHotWallet = Keypair.fromSecretKey(process.env.PRIVATE_KEY);
+  // if Solana Keypair: use either mnemonic or byte array
   // appHotWallet = Keypair.fromMnemonic(process.env.MNEMONIC);
-
   appHotWallet = Keypair.fromByteArray(JSON.parse(process.env.BYTE_ARRAY));
 } catch (error) {
   console.log('🚀 ~ error', error);
@@ -114,8 +112,8 @@ async function setUpKineticClient({ req, res }: AsyncRequest) {
 
   const endpoint =
     req.query.env === 'Mainnet'
-      ? process.env.MAINNET_KINETIC_ENDPOINT
-      : process.env.DEVNET_KINETIC_ENDPOINT || 'https://sandbox.kinetic.host/';
+      ? process.env.KINETIC_ENDPOINT
+      : process.env.KINETIC_ENDPOINT || 'https://sandbox.kinetic.host/';
 
   try {
     const index = Number(process.env.APP_INDEX);
