@@ -1,12 +1,12 @@
-# Kinetic Typescript SDK Demo
+# Kinetic Demo Server - TypeScript SDK
 
 
-## This app demonstrates how to integrate with [Kin](https://developer.kin.org/) via the [TypeScript SDK](https://developer.kin.org/developers/typescript)
+## This app demonstrates how to integrate with [Kin](https://developer.kin.org/) via the [TypeScript SDK](https://developer.kin.org/docs/developers/typescript)
 
 
 
 ## Front End
-This Kin BE Demo Server is compatible with our [Kin DApp Playground](https://github.com/kin-starters/kin-dapp-playground)
+This Kin BE Demo Server is compatible with our [Kinetic Playground](https://github.com/kin-starters/kin-dapp-playground)
 
 ## Prep
 - Your App is registered on the [Kin Developer Portal](https://portal.kin.org/) so you can take advantage of the [Kin Rewards Engine](https://developer.kin.org/docs/the-kre-explained/) and get your App Index
