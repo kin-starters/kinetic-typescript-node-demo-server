@@ -74,7 +74,7 @@
     create-hmac "^1.1.7"
     tslib "^2.4.0"
 
-"@kin-kinetic/sdk@^1.0.0-rc.3":
+"@kin-kinetic/sdk@^1.0.0-rc.5":
   version "1.0.0-rc.5"
   resolved "https://registry.yarnpkg.com/@kin-kinetic/sdk/-/sdk-1.0.0-rc.5.tgz#dfdfad9f79a414bb744e8282f0d7d59657721f1c"
   integrity sha512-jQcP6dP+fsUf35cvnDW/GdUrctXK2orDKJCQ4HmPOelBrc4I1RGm/+RIN1I9gpXn0XhaT8dd1DzS5qqstaavEA==
@@ -98,10 +98,10 @@
     bignumber.js "9.0.2"
     tslib "2.4.0"
 
-"@kin-tools/keypair-compat@^1.0.0-rc.3":
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/@kin-tools/keypair-compat/-/keypair-compat-1.8.1.tgz#157a3ce2f98ceb76d9d131715c6bdb85f7d29488"
-  integrity sha512-F/KgbBqzveRYPIu+jUFEY9OLTxYGLbrGDzD2u3RlPQ4GVWdvVv7pcc54TmvIsUW3uAV5Z79FFz+1APn0aNsJ7A==
+"@kin-tools/keypair-compat@^1.8.2":
+  version "1.8.2"
+  resolved "https://registry.yarnpkg.com/@kin-tools/keypair-compat/-/keypair-compat-1.8.2.tgz#cffdf8945147433f72eb9baebc22dd0e10d10f1d"
+  integrity sha512-x/N6G1ZpD1ZwoLHXkH8ZtiFw9OLYVbp0dzaKD8QT+JD8imfPrH85y9AsW1f26QwqzT4wzIbZu+1FAdpcO/iL6g==
   dependencies:
     "@kin-kinetic/keypair" "^1.0.0-beta.16"
     atob "^2.1.2"
