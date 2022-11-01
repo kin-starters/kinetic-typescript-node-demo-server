@@ -10,8 +10,7 @@ import {
   TransferDestination,
 } from '@kin-kinetic/sdk';
 import { Keypair } from '@kin-kinetic/keypair';
-import { Commitment } from '@kin-kinetic/solana';
-import { TransactionType } from '@kin-tools/kin-memo';
+import { Commitment, TransactionType } from '@kin-kinetic/solana';
 // import { KeypairCompat } from '@kin-tools/keypair-compat';
 
 dotenv.config();
@@ -233,10 +232,7 @@ async function getBalance({ req, res }: AsyncRequest) {
       });
       console.log('🚀 ~ balance', balance);
 
-      const balanceInKin = Number(balance) / 100000;
-      console.log('🚀 ~ balanceInKin', balanceInKin);
-
-      res.send(balanceInKin.toString());
+      res.send(balance);
     } else {
       throw new Error('No valid user');
     }
