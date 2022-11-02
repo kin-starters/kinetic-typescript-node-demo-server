@@ -9,8 +9,8 @@
 This Kin BE Demo Server is compatible with our [Kinetic Playground](https://github.com/kin-starters/kin-dapp-playground)
 
 ## Prep
-- Your App is registered on the [Kin Developer Portal](https://portal.kin.org/) so you can take advantage of the [Kin Rewards Engine](https://developer.kin.org/docs/the-kre-explained/) and get your App Index
-- Environment variable for your App Index
+- Your App is registered on the [Kin Developer Portal](https://portal.kin.org/) so you can take advantage of the [Kin Rewards Engine](https://developer.kin.org/docs/the-kre-explained/) and get your App Index. 
+- Environment variable for your App Index. Use `APP_INDEX=1` to get started before your own App Index is confirmed.
 - Environment variable for your Keypair. Can be either `MNEMONIC` or `BYTE_ARRAY`. 
 - Don't have a Keypair? 
     - Use the [Kinetic DApp Demo](https://github.com/kin-starters/kin-dapp-kinetic) to quickly generate a devnet Keypair and get your mnemonic phrase.
@@ -20,7 +20,7 @@ This Kin BE Demo Server is compatible with our [Kinetic Playground](https://gith
 
 ```
 PORT=3001
-APP_INDEX=999
+APP_INDEX=1
 KINETIC_ENDPOINT='https://your_kinetic_endpoint'
 BYTE_ARRAY=[24,20,238,188,26,234,120,209,88,63,170,46,66,98,21,113,194,120,143,228,231,37,91,0,242,32,180,99,243,179,57,144,11,233,235,235,203,20,105,33,47,140,152,253,12,148,72,175,141,253,242,110,225,110,21,211,118,87,99,99,99,99,99,99]
 MNEMONIC="cat dog elephant lion tiger shark whale diplodocus dragon pokemon transformer turtle"
