@@ -184,6 +184,11 @@ async function createKinAccount({ req, res }: AsyncRequest) {
       });
       console.log('🚀 ~ account', account);
 
+      const { errors } = account;
+      if (errors?.length) {
+        throw new Error(errors[0]?.message);
+      }
+
       // Resolve Token Account
       // Array of Public Keys in case there are multiple Token Accounts
       const kinTokenAccounts = await kineticClient.getTokenAccounts({
@@ -418,6 +423,11 @@ async function submitPayment({ req, res }: AsyncRequest) {
       const transaction = await kineticClient.makeTransfer(transactionOptions);
       console.log('🚀 ~ transaction', transaction);
 
+      const { errors } = transaction;
+      if (errors?.length) {
+        throw new Error(errors[0]?.message);
+      }
+
       if (transaction.errors.length) {
         throw new Error(transaction.errors[0].message);
       }
@@ -492,6 +502,11 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
 
       const transaction = await kineticClient.makeTransferBatch(batchOptions);
       console.log('🚀 ~ transaction', transaction);
+
+      const { errors } = transaction;
+      if (errors?.length) {
+        throw new Error(errors[0]?.message);
+      }
 
       if (transaction.errors.length) {
         throw new Error(transaction.errors[0].message);
