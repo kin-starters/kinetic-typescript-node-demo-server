@@ -27,8 +27,10 @@ try {
   // appHotWallet = KeypairCompat.getKeypair(process.env.PRIVATE_KEY);
 
   // if Solana Keypair: use either mnemonic or byte array
-  // appHotWallet = Keypair.fromMnemonic(process.env.MNEMONIC);
-  appHotWallet = Keypair.fromByteArray(JSON.parse(process.env.BYTE_ARRAY));
+  // appHotWallet = Keypair.fromSecret(process.env.MNEMONIC);
+  const byteArray = process.env?.BYTE_ARRAY;
+  console.log('🚀 ~ byteArray', byteArray);
+  appHotWallet = Keypair.fromSecret(byteArray);
 } catch (error) {
   console.log('🚀 ~ error', error);
   console.log('🚀 ~ It looks like your PRIVATE_KEY is missing or invalid.');
@@ -175,7 +177,7 @@ async function createKinAccount({ req, res }: AsyncRequest) {
     if (typeof name === 'string') {
       const mnemonic = Keypair.generateMnemonic();
       console.log('🚀 ~ mnemonic', mnemonic);
-      const keypair = Keypair.fromMnemonic(mnemonic);
+      const keypair = Keypair.fromSecret(mnemonic);
       console.log('🚀 ~ keypair', keypair);
 
       const account = await kineticClient.createAccount({
@@ -566,19 +568,21 @@ app.use('/verify', async (req, res) => {
   // Do stuff to verify the transaction
 
   // always verify
-  // const verified = true;
-  // if (verified) {
-  //   res.sendStatus(200);
-  // } else {
-  //   res.sendStatus(400);
-  // }
-
-  // alternate verify
-  if (Math.random() < 0.5) {
+  const verified = true;
+  if (verified) {
     res.sendStatus(200);
   } else {
-    res.sendStatus(400);
+    res.status(400).json({ message: 'Failed to Verify' });
   }
+
+  // random verification
+  // if (Math.random() < 0.5) {
+  //   console.log('verify');
+  //   res.sendStatus(200);
+  // } else {
+  //   console.log('reject');
+  //   res.status(400).json({ message: 'Failed to Verify Randomly' });
+  // }
 });
 
 // catch 404 and forward to error handler
