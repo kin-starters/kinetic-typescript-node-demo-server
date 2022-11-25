@@ -13,8 +13,9 @@ This Kin BE Demo Server is compatible with our [Kinetic Playground](https://gith
 - Environment variable for your App Index. Use `APP_INDEX=1` to get started before your own App Index is confirmed.
 - Environment variable for your Keypair. Can be either `MNEMONIC` or `BYTE_ARRAY`. 
 - Don't have a Keypair? 
+    - For mainnet and devnet Keypairs, use a Solana wallet like Phantom or Solflare to create one.
     - Use the [Kinetic DApp Demo](https://github.com/kin-starters/kin-dapp-kinetic) to quickly generate a devnet Keypair and get your mnemonic phrase.
-    - Or run [Kinetic](https://developer.kin.org/docs/developers/kinetic-deployment#running-kinetic-locally) locally to do the same.
+    - Log in to the [Kinetic Sandbox](https://sandbox.kinetic.host/) and create a keypair in your app's 'Toolbox' section.
 
 `.env`
 
