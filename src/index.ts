@@ -64,6 +64,10 @@ function saveKinAccount({ name, keypair, kinTokenAccounts }: SaveKinAccount) {
   };
   console.log('🚀 ~ users', users);
 }
+function deleteKinAccount({ name }: { name: string }) {
+  delete users[kineticClientEnv()][name];
+  console.log('🚀 ~ users', users);
+}
 
 // List of Transactions
 const transactions = [];
@@ -220,6 +224,45 @@ app.post('/account', (req, res) => {
   createKinAccount({ req, res });
 });
 
+async function closeAccount({ req, res }: AsyncRequest) {
+  const user = req?.query?.user || '';
+  console.log('🚀 ~ closeAccount ', user);
+  try {
+    if (typeof user === 'string') {
+      let publicKey; // use for first attempt
+
+      if (users[kineticClientEnv()][user]) {
+        const { publicKey: pk } = users[kineticClientEnv()][user];
+        publicKey = pk;
+      } else {
+        publicKey = appHotWallet.publicKey;
+      }
+      console.log('🚀 ~ publicKey', publicKey);
+      const transaction = await kineticClient.closeAccount({
+        account: publicKey,
+      });
+      saveKinTransaction({ transactionId: transaction.signature });
+      deleteKinAccount({ name: user });
+
+      res.sendStatus(201);
+    } else {
+      throw new Error('No valid user');
+    }
+  } catch (error) {
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('🚀 ~ error', error);
+    res.sendStatus(400);
+  }
+}
+
+app.get('/close-account', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /close-account');
+  closeAccount({ req, res });
+});
+
 async function getBalance({ req, res }: AsyncRequest) {
   const user = req?.query?.user || '';
   console.log('🚀 ~ getBalance ', user);
@@ -301,76 +344,6 @@ app.post('/airdrop', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /airdrop');
   requestAirdrop({ req, res });
-});
-
-async function getTransaction({ req, res }: AsyncRequest) {
-  const signature = req?.query?.transaction_id || '';
-  console.log('🚀 ~ getTransaction', signature);
-  if (typeof signature === 'string') {
-    try {
-      const transaction = await kineticClient.getTransaction({
-        signature,
-      });
-      console.log('🚀 ~ transaction', transaction);
-      res.send(JSON.stringify(transaction));
-    } catch (error) {
-      console.log(
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      );
-      console.log(
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      );
-      console.log('🚀 ~ error', error);
-      res.sendStatus(400);
-    }
-  }
-}
-
-app.get('/transaction', (req, res) => {
-  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /transaction');
-  getTransaction({ req, res });
-});
-
-async function getHistory({ req, res }: AsyncRequest) {
-  const user = req?.query?.user || '';
-  console.log('🚀 ~ getHistory', user);
-  if (typeof user === 'string') {
-    try {
-      let publicKey;
-
-      if (users[kineticClientEnv()][user]) {
-        const { publicKey: pk } = users[kineticClientEnv()][user];
-        publicKey = pk;
-      } else {
-        publicKey = appHotWallet.publicKey;
-      }
-      console.log('🚀 ~ publicKey', publicKey);
-      const history = await kineticClient.getHistory({
-        account: publicKey,
-      });
-      console.log('🚀 ~ history', history);
-
-      res.send(JSON.stringify(history));
-    } catch (error) {
-      console.log(
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      );
-      console.log(
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      );
-      console.log('🚀 ~ error', error);
-      res.sendStatus(400);
-    }
-  }
-}
-
-app.get('/history', (req, res) => {
-  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-  console.log('🚀 ~ /transaction');
-  getHistory({ req, res });
 });
 
 function getTypeEnum(type) {
@@ -539,6 +512,156 @@ app.post('/earn_batch', async (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /earn_batch');
   submitEarnBatch({ req, res });
+});
+
+async function getTransaction({ req, res }: AsyncRequest) {
+  const signature = req?.query?.transaction_id || '';
+  console.log('🚀 ~ getTransaction', signature);
+  if (typeof signature === 'string') {
+    try {
+      const transaction = await kineticClient.getTransaction({
+        signature,
+      });
+      console.log('🚀 ~ transaction', transaction);
+      res.send(JSON.stringify(transaction));
+    } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
+app.get('/transaction', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /transaction');
+  getTransaction({ req, res });
+});
+
+async function getHistory({ req, res }: AsyncRequest) {
+  const user = req?.query?.user || '';
+  console.log('🚀 ~ getHistory', user);
+  if (typeof user === 'string') {
+    try {
+      let publicKey;
+
+      if (users[kineticClientEnv()][user]) {
+        const { publicKey: pk } = users[kineticClientEnv()][user];
+        publicKey = pk;
+      } else {
+        publicKey = appHotWallet.publicKey;
+      }
+      console.log('🚀 ~ publicKey', publicKey);
+      const history = await kineticClient.getHistory({
+        account: publicKey,
+      });
+      console.log('🚀 ~ history', history);
+
+      res.send(JSON.stringify(history));
+    } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
+app.get('/history', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /transaction');
+  getHistory({ req, res });
+});
+
+async function getAccountInfo({ req, res }: AsyncRequest) {
+  const user = req?.query?.user || '';
+  console.log('🚀 ~ getAccountInfo', user);
+  if (typeof user === 'string') {
+    try {
+      let publicKey;
+
+      if (users[kineticClientEnv()][user]) {
+        const { publicKey: pk } = users[kineticClientEnv()][user];
+        publicKey = pk;
+      } else {
+        publicKey = appHotWallet.publicKey;
+      }
+      console.log('🚀 ~ publicKey', publicKey);
+      const history = await kineticClient.getAccountInfo({
+        account: publicKey,
+      });
+      console.log('🚀 ~ history', history);
+
+      res.send(JSON.stringify(history));
+    } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
+app.get('/account-info', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /transaction');
+  getAccountInfo({ req, res });
+});
+
+async function getTokenAccounts({ req, res }: AsyncRequest) {
+  const user = req?.query?.user || '';
+  console.log('🚀 ~ getTokenAccounts', user);
+  if (typeof user === 'string') {
+    try {
+      let publicKey;
+
+      if (users[kineticClientEnv()][user]) {
+        const { publicKey: pk } = users[kineticClientEnv()][user];
+        publicKey = pk;
+      } else {
+        publicKey = appHotWallet.publicKey;
+      }
+      console.log('🚀 ~ publicKey', publicKey);
+      const tokenAccounts = await kineticClient.getTokenAccounts({
+        account: publicKey,
+      });
+      console.log('🚀 ~ tokenAccounts', tokenAccounts);
+
+      res.send(JSON.stringify(tokenAccounts));
+    } catch (error) {
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log(
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      );
+      console.log('🚀 ~ error', error);
+      res.sendStatus(400);
+    }
+  }
+}
+
+app.get('/token-accounts', (req, res) => {
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+  console.log('🚀 ~ /token-accounts');
+  getTokenAccounts({ req, res });
 });
 
 // Webhooks
