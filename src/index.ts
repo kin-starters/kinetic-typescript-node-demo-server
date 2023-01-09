@@ -256,7 +256,7 @@ async function closeAccount({ req, res }: AsyncRequest) {
   }
 }
 
-app.get('/close-account', (req, res) => {
+app.post('/close-account', (req, res) => {
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
   console.log('🚀 ~ /close-account');
