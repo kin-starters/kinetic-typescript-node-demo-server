@@ -126,10 +126,13 @@ async function setUpKineticClient({ req, res }: AsyncRequest) {
 
     if (!index) throw new Error('No App Index');
 
+    const commitment = Commitment.Processed;
+
     const config: KineticSdkConfig = {
       environment,
       endpoint,
       index,
+      commitment,
     };
 
     console.log('🚀 ~ config', config);
@@ -145,7 +148,6 @@ async function setUpKineticClient({ req, res }: AsyncRequest) {
     } catch (error) {
       // if not, create the account
       await newKineticClient.createAccount({
-        commitment: Commitment.Confirmed,
         owner: appHotWallet,
       });
       const balance = await newKineticClient.getBalance({
@@ -186,7 +188,6 @@ async function createKinAccount({ req, res }: AsyncRequest) {
 
       const account = await kineticClient.createAccount({
         owner: keypair,
-        commitment: Commitment.Confirmed,
       });
       console.log('🚀 ~ account', account);
 
@@ -320,7 +321,6 @@ async function requestAirdrop({ req, res }: AsyncRequest) {
       const airdrop = await kineticClient.requestAirdrop({
         account: publicKey,
         amount: amount,
-        commitment: Commitment.Confirmed,
       });
       console.log('🚀 ~ airdrop', airdrop);
 
@@ -391,7 +391,6 @@ async function submitPayment({ req, res }: AsyncRequest) {
         destination,
         owner: sender,
         type: typeEnum,
-        commitment: Commitment.Confirmed,
       };
       console.log('🚀 ~ transactionOptions', transactionOptions);
 
@@ -469,7 +468,6 @@ async function submitEarnBatch({ req, res }: AsyncRequest) {
       });
 
       const batchOptions: MakeTransferBatchOptions = {
-        commitment: Commitment.Confirmed,
         owner: sender,
         type: TransactionType.Earn,
         destinations,
