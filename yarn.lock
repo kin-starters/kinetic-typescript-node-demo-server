@@ -51,13 +51,13 @@
     "@ethersproject/logger" "^5.7.0"
     hash.js "1.1.7"
 
-"@kin-kinetic/keypair@1.0.0-rc.13":
-  version "1.0.0-rc.13"
-  resolved "https://registry.yarnpkg.com/@kin-kinetic/keypair/-/keypair-1.0.0-rc.13.tgz#f352f14791a1304e5eb262f6ae7381d1817e13b1"
-  integrity sha512-IX3xvWxuvkt2CYFmsWgF4cYkR7Iz6hiFhgksUD8qPB7aagQn14pnFsF72DvjoRYynHC6AERaE0AIfwpqcM505Q==
+"@kin-kinetic/keypair@1.0.0-rc.16":
+  version "1.0.0-rc.16"
+  resolved "https://registry.yarnpkg.com/@kin-kinetic/keypair/-/keypair-1.0.0-rc.16.tgz#11dfede621c50ab7b6a7a2d1f6f353b75e550f80"
+  integrity sha512-S5ocivAD1d4VllrSKkwhXS6F1RP6Ujn2WHpa+v6hn6yp30aHJqRHCIZa4u0OvXUiCqVxHBvE6RESAa8fFSz2+g==
   dependencies:
     "@scure/bip39" "1.1.0"
-    "@solana/web3.js" "1.70.1"
+    "@solana/web3.js" "1.73.0"
     bs58 "4.0.1"
     buffer "5.7.1"
     micro-ed25519-hdkey "0.1.2"
@@ -74,16 +74,16 @@
     create-hmac "^1.1.7"
     tslib "^2.4.0"
 
-"@kin-kinetic/sdk@^1.0.0-rc.13":
-  version "1.0.0-rc.13"
-  resolved "https://registry.yarnpkg.com/@kin-kinetic/sdk/-/sdk-1.0.0-rc.13.tgz#053549fe59cf5054e16da57c2005219c1d2b6e23"
-  integrity sha512-s37qMYOaqMJB0nlAEGE8bVGr95qKNXGtjH3SS0QXsSZ4m2NdWyWfC9FAKZr6OgauYP4SKviQI0+PkdfMOS5eFg==
+"@kin-kinetic/sdk@^1.0.0-rc.16":
+  version "1.0.0-rc.16"
+  resolved "https://registry.yarnpkg.com/@kin-kinetic/sdk/-/sdk-1.0.0-rc.16.tgz#6878a9ea5e8c13fd1cbcddf02d8e1815496d46d7"
+  integrity sha512-MDNvV9Zl+8/0E8XN5C56dikNBLHLlbNjg6aC/haRgnc4dsDRusWTT2z2HuPSQqRLq5ePh8V0DwYQ4HOLYfO9Lw==
   dependencies:
-    "@kin-kinetic/keypair" "1.0.0-rc.13"
-    "@kin-kinetic/solana" "1.0.0-rc.13"
+    "@kin-kinetic/keypair" "1.0.0-rc.16"
+    "@kin-kinetic/solana" "1.0.0-rc.16"
     "@scure/bip39" "1.1.0"
-    "@solana/spl-token" "0.3.6"
-    "@solana/web3.js" "1.70.1"
+    "@solana/spl-token" "0.3.7"
+    "@solana/web3.js" "1.73.0"
     axios "0.27.2"
     bignumber.js "9.0.2"
     bs58 "4.0.1"
@@ -92,13 +92,13 @@
     tslib "2.4.1"
     util "0.12.5"
 
-"@kin-kinetic/solana@1.0.0-rc.13":
-  version "1.0.0-rc.13"
-  resolved "https://registry.yarnpkg.com/@kin-kinetic/solana/-/solana-1.0.0-rc.13.tgz#2f02d787280632e647d55c2ea6f471700efc23e5"
-  integrity sha512-u/2xOke2qGzxyFVLWjvbBH8n/nXVv+obBza2+4UdDtAWIjAQ9jsEWOBY9UiMuGcPBGdo3/BTi7/Qn/RC+PhYPQ==
+"@kin-kinetic/solana@1.0.0-rc.16":
+  version "1.0.0-rc.16"
+  resolved "https://registry.yarnpkg.com/@kin-kinetic/solana/-/solana-1.0.0-rc.16.tgz#629e6bd0c1ecc2ed3369f59f40b811bf4fed3a88"
+  integrity sha512-pnE5Mj+dkDRKe9YCQZ2e7NEPCtDTb9hqoTrOuRG0q5exI8dHOMRtxeLF0Vss9jSlslqq44ESnU4EkGJOEXr9WA==
   dependencies:
-    "@solana/spl-token" "0.3.6"
-    "@solana/web3.js" "1.70.1"
+    "@solana/spl-token" "0.3.7"
+    "@solana/web3.js" "1.73.0"
     axios "0.27.2"
     bignumber.js "9.0.2"
     tslib "2.4.1"
@@ -165,25 +165,26 @@
   dependencies:
     buffer "~6.0.3"
 
-"@solana/spl-token@0.3.6":
-  version "0.3.6"
-  resolved "https://registry.yarnpkg.com/@solana/spl-token/-/spl-token-0.3.6.tgz#35473ad2ed71fe91e5754a2ac72901e1b8b26a42"
-  integrity sha512-P9pTXjDIRvVbjr3J0mCnSamYqLnICeds7IoH1/Ro2R9OBuOHdp5pqKZoscfZ3UYrgnCWUc1bc9M2m/YPHjw+1g==
+"@solana/spl-token@0.3.7":
+  version "0.3.7"
+  resolved "https://registry.yarnpkg.com/@solana/spl-token/-/spl-token-0.3.7.tgz#6f027f9ad8e841f792c32e50920d9d2e714fc8da"
+  integrity sha512-bKGxWTtIw6VDdCBngjtsGlKGLSmiu/8ghSt/IOYJV24BsymRbgq7r12GToeetpxmPaZYLddKwAz7+EwprLfkfg==
   dependencies:
     "@solana/buffer-layout" "^4.0.0"
     "@solana/buffer-layout-utils" "^0.2.0"
     buffer "^6.0.3"
 
-"@solana/web3.js@1.70.1":
-  version "1.70.1"
-  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.70.1.tgz#4a2df47cc32a0f67be5161e772b2ceb6512281fa"
-  integrity sha512-AnaqCF1cJ3w7d0yhvLGAKAcRI+n5o+ursQihhoTe4cUh8/9d4gbT73SoHYElS7e67OtAgLmSfbcC5hcOAgdvnQ==
+"@solana/web3.js@1.73.0":
+  version "1.73.0"
+  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.73.0.tgz#c65f9f954ac80fca6952765c931dd72e57e1b572"
+  integrity sha512-YrgX3Py7ylh8NYkbanoINUPCj//bWUjYZ5/WPy9nQ9SK3Cl7QWCR+NmbDjmC/fTspZGR+VO9LTQslM++jr5PRw==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@noble/ed25519" "^1.7.0"
     "@noble/hashes" "^1.1.2"
     "@noble/secp256k1" "^1.6.3"
     "@solana/buffer-layout" "^4.0.0"
+    agentkeepalive "^4.2.1"
     bigint-buffer "^1.1.5"
     bn.js "^5.0.0"
     borsh "^0.7.0"
@@ -354,6 +355,15 @@ acorn@^7.4.0:
   version "7.4.1"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-7.4.1.tgz#feaed255973d2e77555b83dbc08851a6c63520fa"
   integrity sha512-nQyp0o1/mNdbTO1PO6kHkwSrmgZ0MT/jCCpNiwbUjGoRN4dlBhqJtoQuCnEOKzgTVwg0ZWiCoQy6SxMebQVh8A==
+
+agentkeepalive@^4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/agentkeepalive/-/agentkeepalive-4.2.1.tgz#a7975cbb9f83b367f06c90cc51ff28fe7d499717"
+  integrity sha512-Zn4cw2NEqd+9fiSVWMscnjyQ1a8Yfoc5oBajLeo5w+YBHgDUcEBY2hS4YpTz6iN5f/2zQiktcuM6tS8x1p9dpA==
+  dependencies:
+    debug "^4.1.0"
+    depd "^1.1.2"
+    humanize-ms "^1.2.1"
 
 ajv@^6.10.0, ajv@^6.10.2:
   version "6.12.6"
@@ -866,7 +876,7 @@ debug@^3.2.6:
   dependencies:
     ms "^2.1.1"
 
-debug@^4.0.1, debug@^4.1.1:
+debug@^4.0.1, debug@^4.1.0, debug@^4.1.1:
   version "4.3.4"
   resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.4.tgz#1319f6579357f2338d3337d2cdd4914bb5dcc865"
   integrity sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==
@@ -917,6 +927,11 @@ depd@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/depd/-/depd-2.0.0.tgz#b696163cc757560d09cf22cc8fad1571b79e76df"
   integrity sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==
+
+depd@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/depd/-/depd-1.1.2.tgz#9bcd52e14c097763e749b274c4346ed2e560b5a9"
+  integrity sha512-7emPTl6Dpo6JRXOXjLRxck+FlLRX5847cLKEn00PLAgc3g2hTZZgr+e4c2v6QpSmLeFP3n5yUo7ft6avBK/5jQ==
 
 destroy@1.2.0:
   version "1.2.0"
@@ -1559,6 +1574,13 @@ http-errors@2.0.0:
     statuses "2.0.1"
     toidentifier "1.0.1"
 
+humanize-ms@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/humanize-ms/-/humanize-ms-1.2.1.tgz#c46e3159a293f6b896da29316d8b6fe8bb79bbed"
+  integrity sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==
+  dependencies:
+    ms "^2.0.0"
+
 iconv-lite@0.4.24:
   version "0.4.24"
   resolved "https://registry.yarnpkg.com/iconv-lite/-/iconv-lite-0.4.24.tgz#2022b4b25fbddc21d2f524974a474aafe733908b"
@@ -2032,7 +2054,7 @@ ms@2.1.2:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-ms@2.1.3, ms@^2.1.1:
+ms@2.1.3, ms@^2.0.0, ms@^2.1.1:
   version "2.1.3"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==

@@ -596,12 +596,12 @@ async function getAccountInfo({ req, res }: AsyncRequest) {
         publicKey = appHotWallet.publicKey;
       }
       console.log('🚀 ~ publicKey', publicKey);
-      const history = await kineticClient.getAccountInfo({
+      const info = await kineticClient.getAccountInfo({
         account: publicKey,
       });
-      console.log('🚀 ~ history', history);
+      console.log('🚀 ~ info', info);
 
-      res.send(JSON.stringify(history));
+      res.send(JSON.stringify(info));
     } catch (error) {
       console.log(
         '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
